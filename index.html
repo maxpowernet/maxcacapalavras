@@ -1,0 +1,1824 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Caça-Palavras Interativo</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+:root {
+    --p1-color: #00F2FF;
+    --p2-color: #FF007A;
+    --p3-color: #39FF14;
+    --p4-color: #FFBD33;
+    --bg-dark: #0A0A12;
+    --panel-bg: rgba(25, 25, 35, 0.6);
+    --panel-border: rgba(255, 255, 255, 0.1);
+    --text-main: #FFFFFF;
+    --text-dim: #A0A0B0;
+    --font: 'Outfit', sans-serif;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+/* TV: escalona fonte base para legibilidade à distância (~2m) */
+html {
+    font-size: clamp(16px, 1.2vw, 22px);
+}
+
+body {
+    background-color: var(--bg-dark);
+    color: var(--text-main);
+    font-family: var(--font);
+    overflow: hidden;
+    background: radial-gradient(circle at 50% 50%, #151525 0%, #05050A 100%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.app-container {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.screen {
+    display: none;
+    width: 100%;
+    height: 100%;
+    justify-content: center;
+    align-items: center;
+}
+
+.screen.active {
+    display: flex;
+}
+
+/* Glassmorphism Classes */
+.glass-panel {
+    background: var(--panel-bg);
+    border-radius: 15px;
+    border: 1px solid var(--panel-border);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    padding: 24px;
+}
+
+/* --- Setup Screen --- */
+#setup-screen .glass-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    width: clamp(360px, 30vw, 520px);
+    text-align: center;
+}
+
+.players-inputs {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+input {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--panel-border);
+    padding: 12px;
+    border-radius: 8px;
+    color: white;
+    font-family: var(--font);
+    font-size: 1rem;
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+input:focus {
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+input.input-error {
+    border-color: #ff3333 !important;
+    box-shadow: 0 0 10px rgba(255, 51, 51, 0.5) !important;
+    animation: input-shake 0.4s ease-in-out !important;
+}
+
+@keyframes input-shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    50% { transform: translateX(5px); }
+    75% { transform: translateX(-5px); }
+}
+
+.p1-input:focus {
+    border-color: var(--p1-color);
+    box-shadow: 0 0 8px var(--p1-color);
+}
+
+.p2-input:focus {
+    border-color: var(--p2-color);
+    box-shadow: 0 0 8px var(--p2-color);
+}
+
+.p3-input:focus {
+    border-color: var(--p3-color);
+    box-shadow: 0 0 8px var(--p3-color);
+}
+
+.p4-input:focus {
+    border-color: var(--p4-color);
+    box-shadow: 0 0 8px var(--p4-color);
+}
+
+button {
+    background: linear-gradient(135deg, #00F2FF 0%, #39FF14 100%);
+    color: #000;
+    border: none;
+    padding: 16px;
+    border-radius: 12px;
+    font-size: 1.2rem;
+    font-weight: 800;
+    cursor: pointer;
+    font-family: var(--font);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    box-shadow: 0 4px 15px rgba(0, 242, 255, 0.3);
+}
+
+button:hover {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 8px 25px rgba(57, 255, 20, 0.5);
+    filter: brightness(1.1);
+}
+
+button:active {
+    transform: translateY(0) scale(0.98);
+}
+
+/* --- Game Screen Layout (16:9) --- */
+.game-layout {
+    width: 100%;
+    max-width: 1600px;
+    aspect-ratio: 16 / 9;
+    max-height: 100vh;
+    display: flex;
+    padding: clamp(30px, 3.5vw, 55px);
+    gap: 20px;
+}
+
+/* Sidebar Left */
+.sidebar-ranking {
+    width: 25%;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.brand-logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 15px;
+    background: rgba(0, 242, 255, 0.1);
+    border: 1px solid rgba(0, 242, 255, 0.3);
+    box-shadow: 0 0 15px rgba(0, 242, 255, 0.15);
+}
+
+.brand-display {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+}
+
+.brand-row {
+    display: flex;
+    gap: 4px;
+}
+
+.row-center {
+    justify-content: center;
+}
+
+.l-box {
+    width: 25px;
+    height: 25px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    font-size: 1rem;
+    font-weight: 800;
+    color: #fff;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+}
+
+#setup-screen .l-box {
+    width: 24px;
+    height: 24px;
+    font-size: 0.9rem;
+}
+
+#setup-screen .max-box {
+    width: 42px;
+    height: 42px;
+    font-size: 1.6rem;
+}
+
+.max-box {
+    background: #F0F8FF !important;
+    color: #001C3D !important;
+    box-shadow: 0 0 12px rgba(240, 248, 255, 0.8) !important;
+    text-shadow: none;
+}
+
+.p1-style {
+    background: var(--p1-color);
+    color: #000;
+    text-shadow: none;
+    box-shadow: 0 0 6px var(--p1-color);
+}
+
+.p2-style {
+    background: var(--p2-color);
+    color: #000;
+    text-shadow: none;
+    box-shadow: 0 0 6px var(--p2-color);
+}
+
+.p3-style {
+    background: var(--p3-color);
+    color: #000;
+    text-shadow: none;
+    box-shadow: 0 0 6px var(--p3-color);
+}
+
+.p4-style {
+    background: var(--p4-color);
+    color: #000;
+    text-shadow: none;
+    box-shadow: 0 0 6px var(--p4-color);
+}
+
+.sidebar-ranking h2 {
+    font-size: 1.2rem;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    text-align: center;
+}
+
+#players-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    height: 100%;
+}
+
+.player-card {
+    background: var(--panel-bg);
+    border: 1px solid var(--panel-border);
+    border-radius: 12px;
+    padding: 18px 15px;
+    min-height: 105px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly;
+    gap: 10px;
+    transition: box-shadow 0.3s ease, border-color 0.3s ease, opacity 0.3s ease;
+    backdrop-filter: blur(10px);
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+}
+
+.player-card .name-score {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 600;
+    position: relative;
+    z-index: 10;
+    gap: 10px;
+}
+
+.player-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-grow: 1;
+    font-size: 0.95rem;
+}
+
+.player-score {
+    background: rgba(0, 0, 0, 0.55);
+    padding: 5px 14px;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 800;
+    color: #fff;
+    flex-shrink: 0;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    position: relative;
+    z-index: 10;
+    letter-spacing: 0.5px;
+    min-width: 60px;
+    text-align: center;
+}
+
+.progress-track {
+    width: 100%;
+    height: 8px;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+    z-index: 10;
+}
+
+.progress-fill {
+    height: 100%;
+    width: 0%;
+    border-radius: 4px;
+    transition: width 0.5s ease-in-out;
+}
+
+/* Identificadores visuais por jogador */
+.p1-card {
+    border-left: 4px solid var(--p1-color);
+}
+
+.p1-card .progress-fill {
+    background: var(--p1-color);
+    box-shadow: 0 0 8px var(--p1-color);
+}
+
+.p1-card.active-turn {
+    box-shadow: 0 0 15px rgba(0, 242, 255, 0.4);
+    border-color: var(--p1-color);
+    animation: turn-pulse 2s infinite;
+    opacity: 1;
+}
+
+.p2-card {
+    border-left: 4px solid var(--p2-color);
+}
+
+.p2-card .progress-fill {
+    background: var(--p2-color);
+    box-shadow: 0 0 8px var(--p2-color);
+}
+
+.p2-card.active-turn {
+    box-shadow: 0 0 15px rgba(255, 0, 122, 0.4);
+    border-color: var(--p2-color);
+    animation: turn-pulse 2s infinite;
+    opacity: 1;
+}
+
+.p3-card {
+    border-left: 4px solid var(--p3-color);
+}
+
+.p3-card .progress-fill {
+    background: var(--p3-color);
+    box-shadow: 0 0 8px var(--p3-color);
+}
+
+.p3-card.active-turn {
+    box-shadow: 0 0 15px rgba(57, 255, 20, 0.4);
+    border-color: var(--p3-color);
+    animation: turn-pulse 2s infinite;
+    opacity: 1;
+}
+
+.p4-card {
+    border-left: 4px solid var(--p4-color);
+}
+
+.p4-card .progress-fill {
+    background: var(--p4-color);
+    box-shadow: 0 0 8px var(--p4-color);
+}
+
+.p4-card.active-turn {
+    box-shadow: 0 0 15px rgba(255, 189, 51, 0.4);
+    border-color: var(--p4-color);
+    animation: turn-pulse 2s infinite;
+    opacity: 1;
+}
+
+.player-card:not(.active-turn) {
+    opacity: 0.55;
+}
+
+/* Onda de Copo d'água - usa .card-wave div para não interferir no z-index do conteúdo */
+.card-wave {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+    border-radius: 12px;
+}
+
+.card-wave::before,
+.card-wave::after {
+    content: "";
+    position: absolute;
+    width: 300px;
+    height: 300px;
+    bottom: -230px;
+    left: 50%;
+    margin-left: -150px;
+    border-radius: 40%;
+    pointer-events: none;
+    z-index: 1;
+}
+
+@keyframes wave-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+@keyframes wave-bob {
+    0%, 100% { bottom: -250px; }
+    50% { bottom: -210px; }
+}
+
+.p1-card .card-wave::before {
+    background: rgba(0, 242, 255, 0.15);
+    animation: wave-spin 5s linear infinite, wave-bob 8s ease-in-out infinite;
+}
+
+.p1-card .card-wave::after {
+    background: rgba(0, 242, 255, 0.25);
+    animation: wave-spin 7s linear infinite reverse, wave-bob 6s ease-in-out infinite;
+    border-radius: 45%;
+}
+
+.p2-card .card-wave::before {
+    background: rgba(255, 0, 122, 0.15);
+    animation: wave-spin 5s linear infinite, wave-bob 8s ease-in-out infinite;
+}
+
+.p2-card .card-wave::after {
+    background: rgba(255, 0, 122, 0.25);
+    animation: wave-spin 7s linear infinite reverse, wave-bob 6s ease-in-out infinite;
+    border-radius: 45%;
+}
+
+.p3-card .card-wave::before {
+    background: rgba(57, 255, 20, 0.15);
+    animation: wave-spin 5s linear infinite, wave-bob 8s ease-in-out infinite;
+}
+
+.p3-card .card-wave::after {
+    background: rgba(57, 255, 20, 0.25);
+    animation: wave-spin 7s linear infinite reverse, wave-bob 6s ease-in-out infinite;
+    border-radius: 45%;
+}
+
+.p4-card .card-wave::before {
+    background: rgba(255, 189, 51, 0.15);
+    animation: wave-spin 5s linear infinite, wave-bob 8s ease-in-out infinite;
+}
+
+.p4-card .card-wave::after {
+    background: rgba(255, 189, 51, 0.25);
+    animation: wave-spin 7s linear infinite reverse, wave-bob 6s ease-in-out infinite;
+    border-radius: 45%;
+}
+
+/* Center Grid */
+.grid-container {
+    width: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#word-grid {
+    width: 100%;
+    aspect-ratio: 1;
+    max-height: 100%;
+    display: grid;
+    position: relative;
+    user-select: none;
+    -webkit-user-select: none;
+    gap: 4px;
+    padding: 10px;
+}
+
+.grid-cell {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    /* clamp evita overflow nas células com fonte base maior na TV */
+    font-size: clamp(1rem, 1.8vw, 1.5rem);
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: rgba(255, 255, 255, 0.8);
+    position: relative;
+    z-index: 2;
+    touch-action: none;
+}
+
+.grid-cell:hover,
+.grid-cell-hovered {
+    transform: scale(1.1);
+    background: rgba(255, 255, 255, 0.15);
+    text-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+    z-index: 3;
+}
+
+/* Canvas para desenhar a linha */
+#selection-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+    border-radius: 15px;
+}
+
+/* Right Sidebar */
+.sidebar-info {
+    width: 25%;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.scoreboard {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 14px 18px;
+}
+
+.scoreboard-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.scoreboard-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+}
+
+.scoreboard-pts {
+    font-size: 0.95rem;
+    font-weight: 800;
+    min-width: 52px;
+    text-align: right;
+    letter-spacing: 0.5px;
+}
+
+.scoreboard-bar {
+    width: 100%;
+    height: 4px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.scoreboard-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.5s ease-in-out;
+}
+
+.turn-indicator {
+    text-align: center;
+    border-radius: 15px;
+    padding: 18px 24px;
+    transition: background 0.35s ease, box-shadow 0.35s ease;
+    background: var(--panel-bg);
+    border: none;
+}
+
+.turn-label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 6px;
+    color: rgba(0,0,0,0.55);
+}
+
+.turn-indicator h2 {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: #000 !important;
+    text-shadow: none;
+    line-height: 1.1;
+}
+
+@keyframes cellReveal {
+    from {
+        opacity: 0;
+        transform: scale(0.15);
+        filter: brightness(4);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+        filter: brightness(1);
+    }
+}
+
+.cell-reveal {
+    animation: cellReveal 0.35s ease-out both;
+}
+
+.quiz-panel {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow-y: auto;
+}
+
+.quiz-options {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    margin-top: 4px;
+    --quiz-r: 255;
+    --quiz-g: 255;
+    --quiz-b: 255;
+}
+
+.option-btn {
+    background: rgba(var(--quiz-r), var(--quiz-g), var(--quiz-b), 0.13);
+    border: 1px solid rgba(var(--quiz-r), var(--quiz-g), var(--quiz-b), 0.40);
+    color: rgba(var(--quiz-r), var(--quiz-g), var(--quiz-b), 1);
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-family: var(--font);
+    font-size: 1.07rem;
+    font-weight: 600;
+    text-align: left;
+    width: 100%;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+    line-height: 1.3;
+    transform: none;
+    box-shadow: none;
+}
+
+.option-btn:not(:disabled):hover {
+    background: rgba(var(--quiz-r), var(--quiz-g), var(--quiz-b), 0.28);
+    border-color: rgba(var(--quiz-r), var(--quiz-g), var(--quiz-b), 0.70);
+    transform: translateX(3px);
+    filter: none;
+    box-shadow: none;
+}
+
+.option-btn.option-correct {
+    background: rgba(57, 255, 20, 0.2);
+    border-color: #39FF14;
+    color: #39FF14;
+}
+
+.option-btn.option-wrong {
+    background: rgba(255, 51, 51, 0.2);
+    border-color: #ff3333;
+    color: #ff3333;
+}
+
+.option-btn:disabled {
+    cursor: default;
+}
+
+.wordsearch-panel {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+    padding-bottom: 20px;
+}
+
+.target-word {
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: 4px;
+    color: #fff;
+    text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+    text-align: center;
+    word-break: break-all;
+}
+
+.hidden {
+    display: none !important;
+}
+
+#grid-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(5, 5, 15, 0.93);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    overflow-y: auto;
+    padding: 24px 20px;
+}
+
+.quiz-overlay-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    width: 100%;
+    max-width: 520px;
+    padding: 36px 0;
+}
+
+#grid-overlay p {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.5);
+    line-height: 1.7;
+    text-align: center;
+}
+
+.timer {
+    font-size: 3rem;
+    font-weight: 800;
+    color: #fff;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    background: rgba(0, 0, 0, 0.3);
+    padding: 10px 20px;
+    border-radius: 12px;
+}
+
+.timer.warning {
+    color: #ff3333;
+    animation: turn-pulse 0.5s infinite alternate;
+}
+
+#quiz-question {
+    font-size: 2.03rem;
+    text-align: center;
+    line-height: 1.6;
+    font-weight: 700;
+    color: #FFF;
+    text-transform: uppercase;
+    text-shadow: 0 0 20px rgba(255,255,255,0.15);
+}
+
+/* --- Victory Screen --- */
+#victory-screen {
+    position: relative;
+}
+
+#confetti-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.victory-panel {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    z-index: 10;
+    width: clamp(400px, 32vw, 560px);
+}
+
+.final-ranking {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 20px 0;
+    text-align: left;
+}
+
+.ranking-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.ranking-item.first-place {
+    background: linear-gradient(90deg, rgba(255, 215, 0, 0.2) 0%, rgba(255, 215, 0, 0.05) 100%);
+    border: 1px solid rgba(255, 215, 0, 0.5);
+    transform: scale(1.05);
+    font-weight: 800;
+}
+
+.rank-pos {
+    width: 30px;
+    color: var(--text-dim);
+}
+
+.first-place .rank-pos {
+    color: #FFD700;
+}
+
+.rank-name {
+    flex-grow: 1;
+    margin-left: 10px;
+}
+
+.rank-score {
+    font-weight: 600;
+}
+
+.victory-panel h1 {
+    font-size: 3rem;
+    margin-bottom: 0;
+}
+
+.victory-panel h2 {
+    font-size: 2.5rem;
+    color: #FFD700;
+    text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+}
+
+/* --- Animations --- */
+@keyframes turn-pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+    100% { transform: scale(1); }
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-10px); }
+    40%, 80% { transform: translateX(10px); }
+}
+
+.shake-effect {
+    animation: shake 0.5s;
+}
+
+@keyframes glow-pulse {
+    0%, 100% {
+        background: rgba(255, 255, 255, 0.1);
+        box-shadow: none;
+        color: rgba(255, 255, 255, 0.8);
+    }
+    50% {
+        background: rgba(255, 255, 255, 0.8);
+        box-shadow: 0 0 20px #fff;
+        color: #000;
+    }
+}
+
+.glow-hint {
+    animation: glow-pulse 1s 2;
+}
+
+.found-word {
+    color: #000 !important;
+    text-shadow: none !important;
+}
+    </style>
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Setup Screen -->
+        <div id="setup-screen" class="screen active">
+            <div class="glass-panel">
+                <div class="brand-display" style="margin-bottom: 20px;">
+                    <div class="brand-row row-center">
+                        <span class="l-box max-box">M</span>
+                        <span class="l-box max-box">A</span>
+                        <span class="l-box max-box">X</span>
+                    </div>
+                    <div class="brand-row row-center">
+                        <span class="l-box p1-style">C</span>
+                        <span class="l-box p2-style">A</span>
+                        <span class="l-box p3-style">Ç</span>
+                        <span class="l-box p4-style">A</span>
+                        &nbsp;&nbsp;
+                        <span class="l-box p4-style">P</span>
+                        <span class="l-box p1-style">A</span>
+                        <span class="l-box p2-style">L</span>
+                        <span class="l-box p3-style">A</span>
+                        <span class="l-box p4-style">V</span>
+                        <span class="l-box p1-style">R</span>
+                        <span class="l-box p2-style">A</span>
+                        <span class="l-box p3-style">S</span>
+                    </div>
+                </div>
+                <p>Insira o nome (mínimo 2 jogadores)</p>
+                <div class="players-inputs">
+                    <input type="text" id="p1-name" placeholder="Jogador 1 (Ciano)" class="p1-input">
+                    <input type="text" id="p2-name" placeholder="Jogador 2 (Rosa)" class="p2-input">
+                    <input type="text" id="p3-name" placeholder="Jogador 3 - Opcional (Verde)" class="p3-input">
+                    <input type="text" id="p4-name" placeholder="Jogador 4 - Opcional (Âmbar)" class="p4-input">
+                </div>
+                <button id="start-btn">🚀 Começar Jogo</button>
+            </div>
+        </div>
+
+        <!-- Game Screen (16:9 inner container) -->
+        <div id="game-screen" class="screen">
+            <div class="game-layout">
+                <!-- Left Sidebar: Ranking -->
+                <aside class="sidebar-ranking">
+                    <div class="brand-logo glass-panel" id="brand-logo-btn" style="cursor:pointer;" title="Cancelar e voltar ao início">
+                        <div class="brand-display">
+                            <div class="brand-row row-center">
+                                <span class="l-box max-box">M</span>
+                                <span class="l-box max-box">A</span>
+                                <span class="l-box max-box">X</span>
+                            </div>
+                            <div class="brand-row row-center">
+                                <span class="l-box p1-style">C</span>
+                                <span class="l-box p2-style">A</span>
+                                <span class="l-box p3-style">Ç</span>
+                                <span class="l-box p4-style">A</span>
+                            </div>
+                            <div class="brand-row row-center">
+                                <span class="l-box p4-style">P</span>
+                                <span class="l-box p1-style">A</span>
+                                <span class="l-box p2-style">L</span>
+                                <span class="l-box p3-style">A</span>
+                                <span class="l-box p4-style">V</span>
+                                <span class="l-box p1-style">R</span>
+                                <span class="l-box p2-style">A</span>
+                                <span class="l-box p3-style">S</span>
+                            </div>
+                        </div>
+                    </div>
+                    <h2>RANKING</h2>
+                    <div id="players-list"></div>
+                </aside>
+
+                <!-- Center: Word Grid -->
+                <main class="grid-container">
+                    <div id="word-grid" class="glass-panel">
+                        <!-- Letras serão geradas via JS -->
+                        <canvas id="selection-canvas"></canvas>
+                        <div id="grid-overlay">
+                            <div class="quiz-overlay-inner">
+                                <p id="quiz-question">Responda a pergunta<br>para revelar o caça-palavras! 🔍</p>
+                                <div class="quiz-options" id="quiz-options"></div>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+
+                <!-- Right Sidebar: Info & Timer -->
+                <aside class="sidebar-info">
+                    <div class="scoreboard glass-panel" id="scoreboard">
+                        <!-- preenchido via JS -->
+                    </div>
+                    <div class="turn-indicator" id="turn-indicator">
+                        <span class="turn-label">Turno de:</span>
+                        <h2 id="current-player-name">--</h2>
+                    </div>
+
+                    <!-- Word search phase panel -->
+                    <div class="wordsearch-panel glass-panel hidden" id="wordsearch-panel">
+                        <h3>Encontre a palavra:</h3>
+                        <p id="target-word" class="target-word">---</p>
+                        <div class="timer" id="timer">30s</div>
+                    </div>
+                </aside>
+            </div>
+        </div>
+
+        <!-- Victory Screen -->
+        <div id="victory-screen" class="screen">
+            <canvas id="confetti-canvas"></canvas>
+            <div class="glass-panel victory-panel">
+                <h1>🏆 Vitória!</h1>
+                <h2 id="winner-name">Jogador X</h2>
+                <p>Alcançou 100 pontos!</p>
+                <div id="final-ranking" class="final-ranking"></div>
+                <button id="restart-btn">Jogar Novamente</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+const GRID_SIZE = 14;
+const WIN_SCORE = 100;
+const TURN_TIME = 30;
+
+const PLAYER_COLORS = {
+    0: '#00F2FF', // Ciano
+    1: '#FF007A', // Rosa
+    2: '#39FF14', // Verde
+    3: '#FFBD33'  // Âmbar
+};
+
+const questionBank = [
+    {
+        q: "Na rotina de uma fábrica, o que define o 'Takt Time'?",
+        options: ["A) O horário de almoço dos funcionários.", "B) O ritmo de produção necessário para atender à demanda do cliente.", "C) O tempo que a máquina leva para esfriar.", "D) A data de fundação da empresa."],
+        correct: 1, a: "RITMO"
+    },
+    {
+        q: "Qual marco histórico de 1913 revolucionou a produção em massa?",
+        options: ["A) A criação da Internet.", "B) A invenção da primeira lâmpada.", "C) A implementação da linha de montagem móvel por Henry Ford.", "D) A descoberta do aço."],
+        correct: 2, a: "MONTAGEM"
+    },
+    {
+        q: "No dia a dia da produção, o que é o sistema 'Just-in-Time'?",
+        options: ["A) Produzir o máximo possível para estocar.", "B) Produzir apenas o necessário, no momento certo e na quantidade exata.", "C) Chegar atrasado ao trabalho propositalmente.", "D) Um software de edição de fotos."],
+        correct: 1, a: "PRECISAO"
+    },
+    {
+        q: "Qual destas é uma tarefa de rotina do Auxiliar de Produção no início do turno?",
+        options: ["A) Verificar as condições de segurança e limpeza do posto de trabalho.", "B) Alterar as configurações do servidor da empresa.", "C) Ir embora antes do horário previsto.", "D) Desligar todos os alarmes de incêndio."],
+        correct: 0, a: "VERIFICACAO"
+    },
+    {
+        q: "O 'Dia Mundial da Segurança e Saúde no Trabalho' é celebrado em:",
+        options: ["A) 1º de Janeiro.", "B) 28 de Abril.", "C) 12 de Junho.", "D) 31 de Dezembro."],
+        correct: 1, a: "ABRIL"
+    },
+    {
+        q: "Para que serve o atalho Windows + L no computador?",
+        options: ["A) Ligar a impressora.", "B) Limpar o histórico de navegação.", "C) Bloquear rapidamente a tela do computador.", "D) Listar todos os arquivos da pasta."],
+        correct: 2, a: "BLOQUEIO"
+    },
+    {
+        q: "Em que ano foi lançado o Windows 95, que popularizou o Menu Iniciar?",
+        options: ["A) 1980.", "B) 1995.", "C) 2005.", "D) 1990."],
+        correct: 1, a: "1995"
+    },
+    {
+        q: "Qual é a rotina correta para remover um Pen Drive do computador com segurança?",
+        options: ["A) Puxar o dispositivo o mais rápido possível.", "B) Clicar em 'Ejetar Hardware com Segurança' antes de retirar.", "C) Desligar o monitor e depois puxar.", "D) Formatar o Pen Drive todos os dias."],
+        correct: 1, a: "EJETAR"
+    },
+    {
+        q: "O que é 'Phishing' na rotina de segurança digital?",
+        options: ["A) Uma técnica de pescaria esportiva.", "B) Uma tentativa de enganar o usuário para obter dados pessoais via e-mail ou links falsos.", "C) O nome de um novo processador da Intel.", "D) A limpeza física do teclado."],
+        correct: 1, a: "FRAUDE"
+    },
+    {
+        q: "Quem é considerada a primeira programadora da história?",
+        options: ["A) Bill Gates.", "B) Ada Lovelace.", "C) Steve Jobs.", "D) Marie Curie."],
+        correct: 1, a: "LOVELACE"
+    },
+    {
+        q: "No 5S, o senso de 'Shitsuke' (Autodisciplina) garante que:",
+        options: ["A) As máquinas nunca precisem de óleo.", "B) Os padrões de organização e limpeza sejam mantidos continuamente.", "C) O funcionário possa trabalhar de chinelos.", "D) A empresa não precise pagar salários."],
+        correct: 1, a: "DISCIPLINA"
+    },
+    {
+        q: "Qual a frequência ideal para realizar o backup de arquivos importantes?",
+        options: ["A) Uma vez a cada 5 anos.", "B) Nunca, o computador nunca estraga.", "C) Regularmente (diária ou semanalmente), conforme o volume de dados.", "D) Somente quando o computador pegar um vírus."],
+        correct: 2, a: "REGULAR"
+    },
+    {
+        q: "Qual a principal função de um No-break na rotina de um escritório?",
+        options: ["A) Deixar a internet mais rápida.", "B) Manter os aparelhos ligados por algum tempo durante uma queda de energia.", "C) Gelar o ambiente de trabalho.", "D) Servir como suporte para o monitor."],
+        correct: 1, a: "ENERGIA"
+    },
+    {
+        q: "Na indústria, a sigla 'PCP' significa:",
+        options: ["A) Pequenas Causas de Produção.", "B) Planejamento e Controle da Produção.", "C) Posto de Coleta de Papel.", "D) Programa de Computador Principal."],
+        correct: 1, a: "PLANEJAMENTO"
+    },
+    {
+        q: "Qual a postura ergonômica correta ao operar um computador?",
+        options: ["A) Costas curvadas e pés suspensos.", "B) Monitor abaixo da linha dos olhos e punhos dobrados.", "C) Costas apoiadas, pés no chão e topo do monitor na altura dos olhos.", "D) Digitar com o teclado no colo."],
+        correct: 2, a: "POSTURA"
+    },
+    {
+        q: "O que significa 'Lead Time' na produção?",
+        options: ["A) Tempo de descanso do funcionário.", "B) Tempo total desde o pedido até a entrega do produto.", "C) Tempo de almoço.", "D) Tempo de limpeza da máquina."],
+        correct: 1, a: "ENTREGA"
+    },
+    {
+        q: "Qual ferramenta é usada para organização visual no 5S?",
+        options: ["A) Impressora.", "B) Etiquetas e identificação visual.", "C) Teclado gamer.", "D) Monitor ultrawide."],
+        correct: 1, a: "ETIQUETA"
+    },
+    {
+        q: "O que é ergonomia no trabalho?",
+        options: ["A) Trabalhar mais rápido.", "B) Trabalhar sem pausas.", "C) Adaptar o ambiente às condições do trabalhador.", "D) Usar equipamentos caros."],
+        correct: 2, a: "ADAPTACAO"
+    },
+    {
+        q: "O que fazer ao identificar um risco no ambiente de trabalho?",
+        options: ["A) Ignorar.", "B) Tirar foto apenas.", "C) Comunicar imediatamente ao responsável.", "D) Sair sem avisar."],
+        correct: 2, a: "COMUNICAR"
+    },
+    {
+        q: "Qual destes é um dispositivo de entrada?",
+        options: ["A) Monitor.", "B) Teclado.", "C) Impressora.", "D) Caixa de som."],
+        correct: 1, a: "TECLADO"
+    },
+    {
+        q: "O que faz o atalho Ctrl + C no computador?",
+        options: ["A) Cola conteúdo.", "B) Copia conteúdo.", "C) Recorta conteúdo.", "D) Fecha a janela."],
+        correct: 1, a: "COPIAR"
+    },
+    {
+        q: "O que significa a sigla CPU?",
+        options: ["A) Controle de Processos Unidos.", "B) Unidade Central de Processamento.", "C) Computador Pessoal Único.", "D) Central de Programas Úteis."],
+        correct: 1, a: "PROCESSADOR"
+    },
+    {
+        q: "Qual prática ajuda na segurança digital?",
+        options: ["A) Usar senha fraca.", "B) Usar senhas fortes e únicas.", "C) Compartilhar senha com colegas.", "D) Anotar a senha em local público."],
+        correct: 1, a: "SENHA"
+    },
+    {
+        q: "O que é um vírus de computador?",
+        options: ["A) Um hardware.", "B) Um software malicioso.", "C) Um cabo de rede.", "D) Um periférico externo."],
+        correct: 1, a: "VIRUS"
+    },
+    {
+        q: "Qual é a função do mouse no computador?",
+        options: ["A) Imprimir arquivos.", "B) Controlar o cursor na tela.", "C) Armazenar dados.", "D) Reproduzir áudio."],
+        correct: 1, a: "CURSOR"
+    },
+    {
+        q: "O que significa 'layout' na produção?",
+        options: ["A) Salário dos funcionários.", "B) Organização física dos equipamentos no espaço.", "C) Tipo de produto fabricado.", "D) Horário de trabalho."],
+        correct: 1, a: "LAYOUT"
+    },
+    {
+        q: "O que é produtividade?",
+        options: ["A) Trabalhar mais horas.", "B) Produzir mais com menos recursos.", "C) Descansar mais durante o expediente.", "D) Diminuir a produção."],
+        correct: 1, a: "EFICIENCIA"
+    },
+    {
+        q: "Qual é a função do sistema operacional?",
+        options: ["A) Limpar o computador fisicamente.", "B) Gerenciar hardware e software.", "C) Criar vírus.", "D) Desligar o computador sozinho."],
+        correct: 1, a: "SISTEMA"
+    },
+    {
+        q: "O que significa backup?",
+        options: ["A) Apagar arquivos desnecessários.", "B) Cópia de segurança dos dados.", "C) Formatar o computador.", "D) Desligar o sistema."],
+        correct: 1, a: "BACKUP"
+    },
+    {
+        q: "Qual atitude melhora a organização no trabalho?",
+        options: ["A) Deixar tudo espalhado.", "B) Não limpar o local de trabalho.", "C) Manter o ambiente limpo e organizado.", "D) Acumular materiais sem necessidade."],
+        correct: 2, a: "LIMPEZA"
+    }
+];
+
+let players = [];
+let currentPlayerIndex = 0;
+let timer = null;
+let timeLeft = TURN_TIME;
+let gridLetters = [];
+let usedQuestions = [];
+let currentAnswerCoords = [];
+
+let isDragging = false;
+let startCell = null;
+let currentHoverCell = null;
+let drawnLines = [];
+let gamePhase = 'quiz'; // 'quiz' | 'wordsearch'
+let currentQ = null;
+
+// --- Persistência de pontos (localStorage) ---
+function saveState() {
+    localStorage.setItem('cacaPlayers', JSON.stringify(players));
+}
+
+function loadSavedScores() {
+    try {
+        const saved = localStorage.getItem('cacaPlayers');
+        if (!saved) return;
+        const savedPlayers = JSON.parse(saved);
+        savedPlayers.forEach(sp => {
+            const p = players.find(x => x.id === sp.id);
+            if (p) p.score = sp.score;
+        });
+    } catch(e) { /* ignora dados corrompidos */ }
+}
+
+function clearState() {
+    localStorage.removeItem('cacaPlayers');
+}
+
+// DOM Element cache
+const screenSetup = document.getElementById('setup-screen');
+const screenGame = document.getElementById('game-screen');
+const screenVictory = document.getElementById('victory-screen');
+const btnStart = document.getElementById('start-btn');
+const playersList = document.getElementById('players-list');
+const gridContainer = document.getElementById('word-grid');
+const canvas = document.getElementById('selection-canvas');
+const ctx = canvas.getContext('2d');
+const elTimer = document.getElementById('timer');
+const elQuestion = document.getElementById('current-question');
+const elTurnName = document.getElementById('current-player-name');
+const indTurn = document.getElementById('turn-indicator');
+const elScoreboard = document.getElementById('scoreboard');
+const elWordSearchPanel = document.getElementById('wordsearch-panel');
+const elQuizQuestion = document.getElementById('quiz-question');
+const elQuizOptions = document.getElementById('quiz-options');
+const elTargetWord = document.getElementById('target-word');
+const elGridOverlay = document.getElementById('grid-overlay');
+const btnRestart = document.getElementById('restart-btn');
+
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+function playSound(type) {
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    
+    if(type === 'success') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.3);
+    } else if(type === 'error') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.2);
+        gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.2);
+    }
+}
+
+btnStart.addEventListener('click', () => {
+    // Resume audio context to bypass autoplay restrictions on browsers
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+    startGame();
+});
+btnRestart.addEventListener('click', () => location.reload());
+
+// Clique na logo cancela o jogo e volta ao setup
+document.getElementById('brand-logo-btn').addEventListener('click', () => {
+    if (confirm('Cancelar o jogo e voltar para a tela inicial?')) {
+        clearInterval(timer);
+        clearState();
+        screenGame.classList.remove('active');
+        screenVictory.classList.remove('active');
+        screenSetup.classList.add('active');
+    }
+});
+
+function startGame() {
+    const inputs = [
+        document.getElementById('p1-name'),
+        document.getElementById('p2-name'),
+        document.getElementById('p3-name'),
+        document.getElementById('p4-name')
+    ];
+
+    // Os dois primeiros são obrigatórios
+    let valid = true;
+    inputs.forEach((input, idx) => {
+        if (idx < 2 && !input.value.trim()) {
+            input.classList.add('input-error');
+            valid = false;
+        } else {
+            input.classList.remove('input-error');
+        }
+    });
+
+    if (!valid) {
+        return;
+    }
+
+    // Monta apenas jogadores com nome preenchido; preserva id/cor original
+    players = inputs
+        .map((input, idx) => input.value.trim() ? { id: idx, name: input.value.trim(), score: 0 } : null)
+        .filter(p => p !== null);
+
+    clearState(); // limpa pontos de sessão anterior
+    usedQuestions = [...questionBank].sort(() => Math.random() - 0.5);
+
+    screenSetup.classList.remove('active');
+    screenGame.classList.add('active');
+
+    renderPlayers();
+    initRound();
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+}
+
+function renderPlayers() {
+    playersList.innerHTML = '';
+    // Create a copy to sort for the ranking display
+    const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
+    
+    sortedPlayers.forEach((p) => {
+        const card = document.createElement('div');
+        // Use p.id + 1 for style class (p1-card, etc) and p.id for DOM id
+        card.className = `player-card p${p.id + 1}-card`;
+        card.id = `player-card-${p.id}`;
+        card.innerHTML = `
+            <div class="card-wave"></div>
+            <div class="name-score">
+                <span class="player-name">${p.name}</span>
+                <span class="player-score" id="score-${p.id}">${p.score} pts</span>
+            </div>
+            <div class="progress-track">
+                <div class="progress-fill" id="progress-${p.id}" style="width: ${Math.min(100, (p.score / WIN_SCORE) * 100)}%"></div>
+            </div>
+        `;
+        playersList.appendChild(card);
+    });
+    // Re-apply active turn class after re-render
+    updateTurnUI();
+}
+
+function resizeCanvas() {
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+    redrawCanvas();
+}
+
+function initRound() {
+    if (usedQuestions.length === 0) {
+        usedQuestions = [...questionBank].sort(() => Math.random() - 0.5);
+    }
+    currentQ = usedQuestions.pop();
+    drawnLines = [];
+    isDragging = false;
+    updateTurnUI();
+    showQuizPhase();
+}
+
+function showQuizPhase() {
+    gamePhase = 'quiz';
+    clearInterval(timer);
+    elWordSearchPanel.classList.add('hidden');
+    elGridOverlay.classList.remove('hidden');
+    elQuizQuestion.textContent = currentQ.q;
+    elQuizOptions.innerHTML = currentQ.options.map((opt, idx) =>
+        `<button class="option-btn" data-idx="${idx}">${opt}</button>`
+    ).join('');
+    const _pc = PLAYER_COLORS[players[currentPlayerIndex].id];
+    elQuizOptions.style.setProperty('--quiz-r', parseInt(_pc.slice(1, 3), 16));
+    elQuizOptions.style.setProperty('--quiz-g', parseInt(_pc.slice(3, 5), 16));
+    elQuizOptions.style.setProperty('--quiz-b', parseInt(_pc.slice(5, 7), 16));
+    elQuizOptions.querySelectorAll('.option-btn').forEach(btn => {
+        btn.addEventListener('click', () => handleQuizAnswer(parseInt(btn.dataset.idx)));
+    });
+}
+
+function handleQuizAnswer(selectedIdx) {
+    const buttons = elQuizOptions.querySelectorAll('.option-btn');
+    buttons.forEach(btn => btn.disabled = true);
+    if (selectedIdx === currentQ.correct) {
+        buttons[selectedIdx].classList.add('option-correct');
+        playSound('success');
+        setTimeout(() => showWordSearchPhase(), 900);
+    } else {
+        buttons[selectedIdx].classList.add('option-wrong');
+        buttons[currentQ.correct].classList.add('option-correct');
+        playSound('error');
+        setTimeout(() => advanceTurn(), 2200);
+    }
+}
+
+function showWordSearchPhase() {
+    gamePhase = 'wordsearch';
+    gridLetters = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(''));
+    placeWordInGrid(currentQ.a);
+    fillGridRandomly();
+    renderGrid();
+    elWordSearchPanel.classList.remove('hidden');
+    elGridOverlay.classList.add('hidden');
+    elTargetWord.textContent = currentQ.a;
+    timeLeft = TURN_TIME;
+    updateTimerDisplay();
+    clearInterval(timer);
+    timer = setInterval(tick, 1000);
+}
+
+function advanceTurn() {
+    currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
+    initRound();
+}
+
+function tick() {
+    timeLeft--;
+    updateTimerDisplay();
+    if (timeLeft <= 0) {
+        clearInterval(timer);
+        playSound('error');
+        showHintAndNextTurn();
+    }
+}
+
+function updateTimerDisplay() {
+    elTimer.textContent = `${timeLeft}s`;
+    if (timeLeft <= 5) elTimer.classList.add('warning');
+    else elTimer.classList.remove('warning');
+}
+
+function updateTurnUI() {
+    const currentPlayer = players[currentPlayerIndex];
+    for (let i = 0; i < players.length; i++) {
+        const card = document.getElementById(`player-card-${players[i].id}`);
+        if (card) {
+            if (i === currentPlayerIndex) card.classList.add('active-turn');
+            else card.classList.remove('active-turn');
+        }
+    }
+    elTurnName.textContent = currentPlayer.name;
+    const color = PLAYER_COLORS[currentPlayer.id];
+    elTurnName.style.color = '#000';
+    indTurn.style.background = color;
+    indTurn.style.boxShadow = `0 0 20px ${color}99`;
+
+    // Atualiza placar lateral
+    elScoreboard.innerHTML = players.map(p => {
+        const c = PLAYER_COLORS[p.id];
+        const pct = Math.min(100, (p.score / WIN_SCORE) * 100);
+        return `
+            <div class="scoreboard-row">
+                <span class="scoreboard-name" style="color:${c}">${p.name}</span>
+                <span class="scoreboard-pts" style="color:${c}">${p.score} pts</span>
+            </div>
+            <div class="scoreboard-bar">
+                <div class="scoreboard-bar-fill" style="width:${pct}%;background:${c}"></div>
+            </div>`;
+    }).join('');
+}
+
+function placeWordInGrid(word) {
+    const len = word.length;
+    let placed = false;
+    let attempts = 0;
+    
+    const directions = [
+        {dr: 0, dc: 1},  // Horizontal Direita (L -> R)
+        {dr: 1, dc: 0}   // Vertical Baixo (T -> B)
+    ];
+
+    while (!placed && attempts < 100) {
+        attempts++;
+        const dir = directions[Math.floor(Math.random() * directions.length)];
+        const startR = Math.floor(Math.random() * GRID_SIZE);
+        const startC = Math.floor(Math.random() * GRID_SIZE);
+        
+        let canPlace = true;
+        let coords = [];
+        
+        for (let i = 0; i < len; i++) {
+            const tr = startR + dir.dr * i;
+            const tc = startC + dir.dc * i;
+            if (tr < 0 || tr >= GRID_SIZE || tc < 0 || tc >= GRID_SIZE) {
+                canPlace = false;
+                break;
+            }
+            if (gridLetters[tr][tc] !== '' && gridLetters[tr][tc] !== word[i]) {
+                canPlace = false;
+                break;
+            }
+            coords.push({r: tr, c: tc, letter: word[i]});
+        }
+        
+        if (canPlace) {
+            currentAnswerCoords = coords;
+            for (let i = 0; i < len; i++) {
+                gridLetters[coords[i].r][coords[i].c] = coords[i].letter;
+            }
+            placed = true;
+        }
+    }
+}
+
+function fillGridRandomly() {
+    const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    for(let r=0; r<GRID_SIZE; r++){
+        for(let c=0; c<GRID_SIZE; c++){
+            if(gridLetters[r][c] === ''){
+                gridLetters[r][c] = letters.charAt(Math.floor(Math.random() * letters.length));
+            }
+        }
+    }
+}
+
+function renderGrid() {
+    const oldCells = gridContainer.querySelectorAll('.grid-cell');
+    oldCells.forEach(c => c.remove());
+    
+    gridContainer.style.gridTemplateColumns = `repeat(${GRID_SIZE}, 1fr)`;
+    gridContainer.style.gridTemplateRows = `repeat(${GRID_SIZE}, 1fr)`;
+    
+    for(let r=0; r<GRID_SIZE; r++){
+        for(let c=0; c<GRID_SIZE; c++){
+            const cell = document.createElement('div');
+            cell.className = 'grid-cell cell-reveal';
+            cell.dataset.r = r;
+            cell.dataset.c = c;
+            cell.textContent = gridLetters[r][c];
+            cell.style.animationDelay = `${(r + c) * 22}ms`;
+            
+            cell.addEventListener('pointerdown', handlePointerDown);
+            cell.addEventListener('pointerenter', handlePointerEnter);
+            
+            gridContainer.appendChild(cell);
+        }
+    }
+    redrawCanvas();
+}
+
+function handlePointerDown(e) {
+    if (timeLeft <= 0) return;
+    if (gamePhase !== 'wordsearch') return;
+    isDragging = true;
+    startCell = e.target;
+    currentHoverCell = e.target;
+    // Sem setPointerCapture: permite que pointermove/pointerenter detectem outras células no touch
+    e.target.classList.add('grid-cell-hovered');
+    redrawCanvas();
+}
+
+function handlePointerEnter(e) {
+    if (isDragging) {
+        if(currentHoverCell) currentHoverCell.classList.remove('grid-cell-hovered');
+        currentHoverCell = e.target;
+        currentHoverCell.classList.add('grid-cell-hovered');
+        redrawCanvas();
+    }
+}
+
+// Fix touch drag: usa elementFromPoint para detectar célula sob o dedo (touch não dispara pointerenter com capture)
+window.addEventListener('pointermove', (e) => {
+    if (!isDragging) return;
+    const elemBelow = document.elementFromPoint(e.clientX, e.clientY);
+    if (elemBelow && elemBelow.classList.contains('grid-cell') && elemBelow !== currentHoverCell) {
+        if (currentHoverCell) currentHoverCell.classList.remove('grid-cell-hovered');
+        currentHoverCell = elemBelow;
+        currentHoverCell.classList.add('grid-cell-hovered');
+        redrawCanvas();
+    }
+});
+
+window.addEventListener('pointerup', (e) => {
+    if(!isDragging) return;
+    isDragging = false;
+    
+    if(currentHoverCell) currentHoverCell.classList.remove('grid-cell-hovered');
+    if(startCell) startCell.classList.remove('grid-cell-hovered');
+
+    let endCell = currentHoverCell;
+    const elemBelow = document.elementFromPoint(e.clientX, e.clientY);
+    if(elemBelow && elemBelow.classList.contains('grid-cell')) {
+        endCell = elemBelow;
+    }
+
+    if (startCell && endCell) {
+        checkSelection(startCell, endCell);
+    }
+    
+    startCell = null;
+    currentHoverCell = null;
+    redrawCanvas();
+});
+
+function getCellCenter(cell) {
+    const rect = cell.getBoundingClientRect();
+    const parentRect = gridContainer.getBoundingClientRect();
+    return {
+        x: rect.left - parentRect.left + rect.width / 2,
+        y: rect.top - parentRect.top + rect.height / 2
+    };
+}
+
+function redrawCanvas() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawnLines.forEach(line => drawLine(line.start, line.end, line.color));
+    
+    if (isDragging && startCell && currentHoverCell) {
+        const startPos = getCellCenter(startCell);
+        const endPos = getCellCenter(currentHoverCell);
+        const color = PLAYER_COLORS[players[currentPlayerIndex].id];
+        drawLine(startPos, endPos, color);
+    }
+}
+
+function drawLine(p1, p2, color) {
+    ctx.beginPath();
+    ctx.moveTo(p1.x, p1.y);
+    ctx.lineTo(p2.x, p2.y);
+    // Relative line width
+    const w = Math.min(canvas.width, canvas.height) / GRID_SIZE;
+    ctx.lineWidth = w * 0.5;
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = color + '80'; // 50% opacity border
+    ctx.stroke();
+    
+    ctx.lineWidth = w * 0.15;
+    ctx.strokeStyle = color; // solid center
+    ctx.stroke();
+}
+
+function checkSelection(startElement, endElement) {
+    const r1 = parseInt(startElement.dataset.r);
+    const c1 = parseInt(startElement.dataset.c);
+    const r2 = parseInt(endElement.dataset.r);
+    const c2 = parseInt(endElement.dataset.c);
+    
+    const dr = Math.sign(r2 - r1);
+    const dc = Math.sign(c2 - c1);
+    
+    // Apenas horizontal (dr=0) ou vertical (dc=0)
+    if (dr !== 0 && dc !== 0) {
+        return invalidSelection();
+    }
+    
+    const selectedCoords = [];
+    const steps = Math.max(Math.abs(r2-r1), Math.abs(c2-c1));
+    for (let i = 0; i <= steps; i++) {
+        selectedCoords.push({r: r1 + dr * i, c: c1 + dc * i});
+    }
+
+    let match = false;
+    if (selectedCoords.length === currentAnswerCoords.length) {
+        // Aceita seleção em qualquer direção (início→fim ou fim→início)
+        const forward = selectedCoords.every((coord, idx) =>
+            coord.r === currentAnswerCoords[idx].r && coord.c === currentAnswerCoords[idx].c
+        );
+        const backward = selectedCoords.every((coord, idx) =>
+            coord.r === currentAnswerCoords[currentAnswerCoords.length - 1 - idx].r &&
+            coord.c === currentAnswerCoords[currentAnswerCoords.length - 1 - idx].c
+        );
+        match = forward || backward;
+    }
+
+    if (match) {
+        handleSuccess(startElement, endElement, selectedCoords);
+    } else {
+        invalidSelection();
+    }
+}
+
+function handleSuccess(startElement, endElement, selectedCoords) {
+    clearInterval(timer);
+    playSound('success');
+    
+    const playerColor = PLAYER_COLORS[players[currentPlayerIndex].id];
+    
+    drawnLines.push({
+        start: getCellCenter(startElement),
+        end: getCellCenter(endElement),
+        color: playerColor
+    });
+    
+    selectedCoords.forEach(coord => {
+        const cell = document.querySelector(`.grid-cell[data-r="${coord.r}"][data-c="${coord.c}"]`);
+        if(cell) {
+            cell.classList.add('found-word');
+            cell.style.background = playerColor;
+        }
+    });
+    
+    // 15-30s = 10 pts | 1-14s = 5 pts | timeout = 0 pts
+    const pointsEarned = timeLeft >= 15 ? 10 : 5;
+    const winnerIdx = currentPlayerIndex; // captura índice antes de qualquer async
+    players[winnerIdx].score += pointsEarned;
+    saveState();
+
+    // Atualiza cards e placar
+    renderPlayers();
+    redrawCanvas();
+
+    if (players[winnerIdx].score >= WIN_SCORE) {
+        setTimeout(triggerWin, 1000);
+    } else {
+        setTimeout(advanceTurn, 1500);
+    }
+}
+
+function invalidSelection() {
+    playSound('error');
+    gridContainer.classList.add('shake-effect');
+    setTimeout(() => {
+        gridContainer.classList.remove('shake-effect');
+    }, 500);
+    
+    clearInterval(timer);
+    showHintAndNextTurn();
+}
+
+function showHintAndNextTurn() {
+    currentAnswerCoords.forEach(coord => {
+        const cell = document.querySelector(`.grid-cell[data-r="${coord.r}"][data-c="${coord.c}"]`);
+        if(cell) cell.classList.add('glow-hint');
+    });
+    
+    setTimeout(() => advanceTurn(), 2500);
+}
+
+function triggerWin() {
+    screenGame.classList.remove('active');
+    screenVictory.classList.add('active');
+    
+    const winner = players[currentPlayerIndex];
+    document.getElementById('winner-name').textContent = winner.name;
+    document.getElementById('winner-name').style.color = PLAYER_COLORS[winner.id];
+
+    // Mostrar Ranking Final
+    const rankingContainer = document.getElementById('final-ranking');
+    const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
+    
+    rankingContainer.innerHTML = sortedPlayers.map((p, idx) => `
+        <div class="ranking-item ${idx === 0 ? 'first-place' : ''}">
+            <span class="rank-pos">#${idx + 1}</span>
+            <span class="rank-name">${p.name}</span>
+            <span class="rank-score">${p.score} pts</span>
+        </div>
+    `).join('');
+
+    startConfetti();
+}
+
+function startConfetti() {
+    const cfCanvas = document.getElementById('confetti-canvas');
+    const ct = cfCanvas.getContext('2d');
+    cfCanvas.width = window.innerWidth;
+    cfCanvas.height = window.innerHeight;
+    
+    const pieces = [];
+    const colors = ['#00F2FF', '#FF007A', '#39FF14', '#FFBD33', '#ffffff'];
+    
+    for(let i=0; i<200; i++) {
+        pieces.push({
+            x: Math.random() * cfCanvas.width,
+            y: Math.random() * cfCanvas.height - cfCanvas.height,
+            vx: Math.random() * 4 - 2,
+            vy: Math.random() * 4 + 2,
+            size: Math.random() * 8 + 6,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            rot: Math.random() * 360,
+            rotSpeed: Math.random() * 10 - 5
+        });
+    }
+    
+    function renderConfetti() {
+        ct.clearRect(0, 0, cfCanvas.width, cfCanvas.height);
+        pieces.forEach(p => {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.rot += p.rotSpeed;
+            if (p.y > cfCanvas.height) {
+                p.y = -10;
+                p.x = Math.random() * cfCanvas.width;
+            }
+            
+            ct.save();
+            ct.translate(p.x, p.y);
+            ct.rotate(p.rot * Math.PI / 180);
+            ct.fillStyle = p.color;
+            ct.fillRect(-p.size/2, -p.size/2, p.size, p.size);
+            ct.restore();
+        });
+        requestAnimationFrame(renderConfetti);
+    }
+    renderConfetti();
+}
+    </script>
+</body>
+
+</html>
