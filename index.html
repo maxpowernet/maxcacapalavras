@@ -912,6 +912,42 @@ button:active {
     color: #000 !important;
     text-shadow: none !important;
 }
+
+/* --- Botão Tela Cheia --- */
+#fullscreen-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: rgba(25, 25, 35, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #fff;
+    font-size: 1.4rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.5);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+    z-index: 9999;
+}
+
+#fullscreen-btn:hover {
+    background: rgba(0, 242, 255, 0.2);
+    border-color: rgba(0, 242, 255, 0.6);
+    box-shadow: 0 0 14px rgba(0, 242, 255, 0.4);
+    transform: scale(1.12);
+    filter: none;
+}
+
+#fullscreen-btn:active {
+    transform: scale(0.95);
+}
     </style>
 </head>
 
@@ -1033,6 +1069,9 @@ button:active {
             </div>
         </div>
     </div>
+
+    <!-- Botão flutuante de tela cheia -->
+    <button id="fullscreen-btn" title="Tela Cheia">⛶</button>
 
     <script>
 const GRID_SIZE = 14;
@@ -1290,6 +1329,20 @@ btnStart.addEventListener('click', () => {
     startGame();
 });
 btnRestart.addEventListener('click', () => location.reload());
+
+// Botão tela cheia
+const btnFullscreen = document.getElementById('fullscreen-btn');
+function updateFullscreenIcon() {
+    btnFullscreen.textContent = document.fullscreenElement ? '✕' : '⛶';
+}
+btnFullscreen.addEventListener('click', () => {
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen();
+    } else {
+        document.exitFullscreen();
+    }
+});
+document.addEventListener('fullscreenchange', updateFullscreenIcon);
 
 // Clique na logo cancela o jogo e volta ao setup
 document.getElementById('brand-logo-btn').addEventListener('click', () => {
