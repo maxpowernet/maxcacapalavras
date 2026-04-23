@@ -167,13 +167,19 @@ button:active {
 }
 
 /* --- Game Screen Layout (16:9) --- */
+#game-screen {
+    align-items: flex-start;
+    padding-top: clamp(6px, 1vh, 18px);
+}
+
 .game-layout {
     width: 100%;
     max-width: 1600px;
     aspect-ratio: 16 / 9;
     max-height: 100vh;
     display: flex;
-    padding: clamp(30px, 3.5vw, 55px);
+    align-items: flex-start;
+    padding: clamp(20px, 2.5vw, 40px);
     gap: 20px;
 }
 
@@ -507,7 +513,7 @@ button:active {
     width: 50%;
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start;
 }
 
 #word-grid {
