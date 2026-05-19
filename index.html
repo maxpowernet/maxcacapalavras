@@ -959,8 +959,41 @@ button:active {
 
 <body>
     <div class="app-container">
+        <!-- Year Selection Screen -->
+        <div id="year-screen" class="screen active">
+            <div class="glass-panel" style="display:flex;flex-direction:column;gap:24px;width:clamp(360px,30vw,520px);text-align:center;">
+                <div class="brand-display">
+                    <div class="brand-row row-center">
+                        <span class="l-box max-box">M</span>
+                        <span class="l-box max-box">A</span>
+                        <span class="l-box max-box">X</span>
+                    </div>
+                    <div class="brand-row row-center">
+                        <span class="l-box p1-style">C</span>
+                        <span class="l-box p2-style">A</span>
+                        <span class="l-box p3-style">Ç</span>
+                        <span class="l-box p4-style">A</span>
+                        &nbsp;&nbsp;
+                        <span class="l-box p4-style">P</span>
+                        <span class="l-box p1-style">A</span>
+                        <span class="l-box p2-style">L</span>
+                        <span class="l-box p3-style">A</span>
+                        <span class="l-box p4-style">V</span>
+                        <span class="l-box p1-style">R</span>
+                        <span class="l-box p2-style">A</span>
+                        <span class="l-box p3-style">S</span>
+                    </div>
+                </div>
+                <p>Selecione o ano para começar:</p>
+                <div style="display:flex;gap:12px;">
+                    <button id="year-btn-1" style="flex:1;background:linear-gradient(135deg,#00F2FF 0%,#39FF14 100%);">🖥️ 1º Ano</button>
+                    <button id="year-btn-2" style="flex:1;background:linear-gradient(135deg,#FF007A 0%,#FFBD33 100%);">💻 2º Ano</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Setup Screen -->
-        <div id="setup-screen" class="screen active">
+        <div id="setup-screen" class="screen">
             <div class="glass-panel">
                 <div class="brand-display" style="margin-bottom: 20px;">
                     <div class="brand-row row-center">
@@ -1081,7 +1114,7 @@ button:active {
 
     <script>
 const GRID_SIZE = 14;
-const WIN_SCORE = 100;
+const WIN_SCORE = 80;
 const TURN_TIME = 30;
 
 const PLAYER_COLORS = {
@@ -1091,159 +1124,313 @@ const PLAYER_COLORS = {
     3: '#FFBD33'  // Âmbar
 };
 
-const questionBank = [
+const questionBank1 = [
     {
-        q: "Na rotina de uma fábrica, o que define o 'Takt Time'?",
-        options: ["A) O horário de almoço dos funcionários.", "B) O ritmo de produção necessário para atender à demanda do cliente.", "C) O tempo que a máquina leva para esfriar.", "D) A data de fundação da empresa."],
-        correct: 1, a: "RITMO"
+        q: "Qual é a função principal do Windows?",
+        options: ["A) Criar planilhas", "B) Navegar apenas na internet", "C) Gerenciar o computador e programas", "D) Editar vídeos apenas"],
+        correct: 2, a: "GERENCIAR"
     },
     {
-        q: "Qual marco histórico de 1913 revolucionou a produção em massa?",
-        options: ["A) A criação da Internet.", "B) A invenção da primeira lâmpada.", "C) A implementação da linha de montagem móvel por Henry Ford.", "D) A descoberta do aço."],
-        correct: 2, a: "MONTAGEM"
+        q: "Qual atalho copia um arquivo ou texto?",
+        options: ["A) Ctrl + X", "B) Ctrl + V", "C) Ctrl + C", "D) Ctrl + Z"],
+        correct: 2, a: "COPIAR"
     },
     {
-        q: "No dia a dia da produção, o que é o sistema 'Just-in-Time'?",
-        options: ["A) Produzir o máximo possível para estocar.", "B) Produzir apenas o necessário, no momento certo e na quantidade exata.", "C) Chegar atrasado ao trabalho propositalmente.", "D) Um software de edição de fotos."],
-        correct: 1, a: "PRECISAO"
+        q: "Qual pasta normalmente guarda arquivos excluídos?",
+        options: ["A) Downloads", "B) Área de Trabalho", "C) Lixeira", "D) Documentos"],
+        correct: 2, a: "LIXEIRA"
     },
     {
-        q: "Qual destas é uma tarefa de rotina do Auxiliar de Produção no início do turno?",
-        options: ["A) Verificar as condições de segurança e limpeza do posto de trabalho.", "B) Alterar as configurações do servidor da empresa.", "C) Ir embora antes do horário previsto.", "D) Desligar todos os alarmes de incêndio."],
-        correct: 0, a: "VERIFICACAO"
+        q: "Qual tecla é usada para apagar caracteres?",
+        options: ["A) Shift", "B) Delete", "C) Alt", "D) Esc"],
+        correct: 1, a: "DELETE"
     },
     {
-        q: "O 'Dia Mundial da Segurança e Saúde no Trabalho' é celebrado em:",
-        options: ["A) 1º de Janeiro.", "B) 28 de Abril.", "C) 12 de Junho.", "D) 31 de Dezembro."],
-        correct: 1, a: "ABRIL"
+        q: "Qual programa do Windows é usado para navegar na internet?",
+        options: ["A) Paint", "B) Word", "C) Excel", "D) Edge"],
+        correct: 3, a: "EDGE"
     },
     {
-        q: "Para que serve o atalho Windows + L no computador?",
-        options: ["A) Ligar a impressora.", "B) Limpar o histórico de navegação.", "C) Bloquear rapidamente a tela do computador.", "D) Listar todos os arquivos da pasta."],
-        correct: 2, a: "BLOQUEIO"
+        q: "O Word é usado principalmente para:",
+        options: ["A) Criar planilhas", "B) Criar documentos de texto", "C) Editar vídeos", "D) Criar jogos"],
+        correct: 1, a: "DOCUMENTO"
     },
     {
-        q: "Em que ano foi lançado o Windows 95, que popularizou o Menu Iniciar?",
-        options: ["A) 1980.", "B) 1995.", "C) 2005.", "D) 1990."],
-        correct: 1, a: "1995"
+        q: "Qual atalho salva um documento no Word?",
+        options: ["A) Ctrl + P", "B) Ctrl + S", "C) Ctrl + A", "D) Ctrl + T"],
+        correct: 1, a: "SALVAR"
     },
     {
-        q: "Qual é a rotina correta para remover um Pen Drive do computador com segurança?",
-        options: ["A) Puxar o dispositivo o mais rápido possível.", "B) Clicar em 'Ejetar Hardware com Segurança' antes de retirar.", "C) Desligar o monitor e depois puxar.", "D) Formatar o Pen Drive todos os dias."],
-        correct: 1, a: "EJETAR"
+        q: "Qual opção deixa o texto em negrito no Word?",
+        options: ["A) I", "B) U", "C) B", "D) A"],
+        correct: 2, a: "NEGRITO"
     },
     {
-        q: "O que é 'Phishing' na rotina de segurança digital?",
-        options: ["A) Uma técnica de pescaria esportiva.", "B) Uma tentativa de enganar o usuário para obter dados pessoais via e-mail ou links falsos.", "C) O nome de um novo processador da Intel.", "D) A limpeza física do teclado."],
-        correct: 1, a: "FRAUDE"
+        q: "Qual opção deixa o texto sublinhado no Word?",
+        options: ["A) U", "B) B", "C) I", "D) T"],
+        correct: 0, a: "SUBLINHADO"
     },
     {
-        q: "Quem é considerada a primeira programadora da história?",
-        options: ["A) Bill Gates.", "B) Ada Lovelace.", "C) Steve Jobs.", "D) Marie Curie."],
-        correct: 1, a: "LOVELACE"
+        q: "Qual opção deixa o texto em itálico no Word?",
+        options: ["A) U", "B) T", "C) I", "D) B"],
+        correct: 2, a: "ITALICO"
     },
     {
-        q: "No 5S, o senso de 'Shitsuke' (Autodisciplina) garante que:",
-        options: ["A) As máquinas nunca precisem de óleo.", "B) Os padrões de organização e limpeza sejam mantidos continuamente.", "C) O funcionário possa trabalhar de chinelos.", "D) A empresa não precise pagar salários."],
-        correct: 1, a: "DISCIPLINA"
+        q: "Qual guia do Word possui opções de fonte e tamanho?",
+        options: ["A) Inserir", "B) Página Inicial", "C) Layout", "D) Revisão"],
+        correct: 1, a: "FONTE"
     },
     {
-        q: "Qual a frequência ideal para realizar o backup de arquivos importantes?",
-        options: ["A) Uma vez a cada 5 anos.", "B) Nunca, o computador nunca estraga.", "C) Regularmente (diária ou semanalmente), conforme o volume de dados.", "D) Somente quando o computador pegar um vírus."],
-        correct: 2, a: "REGULAR"
+        q: "Qual atalho cola um texto copiado no Word?",
+        options: ["A) Ctrl + C", "B) Ctrl + V", "C) Ctrl + X", "D) Ctrl + A"],
+        correct: 1, a: "COLAR"
     },
     {
-        q: "Qual a principal função de um No-break na rotina de um escritório?",
-        options: ["A) Deixar a internet mais rápida.", "B) Manter os aparelhos ligados por algum tempo durante uma queda de energia.", "C) Gelar o ambiente de trabalho.", "D) Servir como suporte para o monitor."],
-        correct: 1, a: "ENERGIA"
+        q: "Qual função da tecla Enter no Word?",
+        options: ["A) Apagar texto", "B) Criar nova linha/parágrafo", "C) Salvar documento", "D) Imprimir arquivo"],
+        correct: 1, a: "PARAGRAFO"
     },
     {
-        q: "Na indústria, a sigla 'PCP' significa:",
-        options: ["A) Pequenas Causas de Produção.", "B) Planejamento e Controle da Produção.", "C) Posto de Coleta de Papel.", "D) Programa de Computador Principal."],
-        correct: 1, a: "PLANEJAMENTO"
+        q: "Qual opção alinha o texto ao centro no Word?",
+        options: ["A) Justificar", "B) Alinhar à esquerda", "C) Centralizar", "D) Alinhar à direita"],
+        correct: 2, a: "CENTRALIZAR"
     },
     {
-        q: "Qual a postura ergonômica correta ao operar um computador?",
-        options: ["A) Costas curvadas e pés suspensos.", "B) Monitor abaixo da linha dos olhos e punhos dobrados.", "C) Costas apoiadas, pés no chão e topo do monitor na altura dos olhos.", "D) Digitar com o teclado no colo."],
-        correct: 2, a: "POSTURA"
+        q: "Qual menu é usado para inserir imagens no Word?",
+        options: ["A) Página Inicial", "B) Revisão", "C) Inserir", "D) Exibir"],
+        correct: 2, a: "INSERIR"
     },
     {
-        q: "O que significa 'Lead Time' na produção?",
-        options: ["A) Tempo de descanso do funcionário.", "B) Tempo total desde o pedido até a entrega do produto.", "C) Tempo de almoço.", "D) Tempo de limpeza da máquina."],
-        correct: 1, a: "ENTREGA"
+        q: "O Excel é usado principalmente para:",
+        options: ["A) Criar apresentações", "B) Criar planilhas e cálculos", "C) Editar vídeos", "D) Programar jogos"],
+        correct: 1, a: "PLANILHA"
     },
     {
-        q: "Qual ferramenta é usada para organização visual no 5S?",
-        options: ["A) Impressora.", "B) Etiquetas e identificação visual.", "C) Teclado gamer.", "D) Monitor ultrawide."],
-        correct: 1, a: "ETIQUETA"
+        q: "Como é chamada a divisão entre linha e coluna no Excel?",
+        options: ["A) Página", "B) Bloco", "C) Célula", "D) Caixa"],
+        correct: 2, a: "CELULA"
     },
     {
-        q: "O que é ergonomia no trabalho?",
-        options: ["A) Trabalhar mais rápido.", "B) Trabalhar sem pausas.", "C) Adaptar o ambiente às condições do trabalhador.", "D) Usar equipamentos caros."],
-        correct: 2, a: "ADAPTACAO"
+        q: "Qual símbolo inicia uma fórmula no Excel?",
+        options: ["A) #", "B) @", "C) =", "D) %"],
+        correct: 2, a: "FORMULA"
     },
     {
-        q: "O que fazer ao identificar um risco no ambiente de trabalho?",
-        options: ["A) Ignorar.", "B) Tirar foto apenas.", "C) Comunicar imediatamente ao responsável.", "D) Sair sem avisar."],
-        correct: 2, a: "COMUNICAR"
+        q: "Qual fórmula soma valores no Excel?",
+        options: ["A) =MEDIA", "B) =MAXIMO", "C) =SOMA", "D) =SE"],
+        correct: 2, a: "SOMA"
     },
     {
-        q: "Qual destes é um dispositivo de entrada?",
-        options: ["A) Monitor.", "B) Teclado.", "C) Impressora.", "D) Caixa de som."],
-        correct: 1, a: "TECLADO"
+        q: "Qual fórmula calcula a média no Excel?",
+        options: ["A) =MEDIA", "B) =SOMA", "C) =MINIMO", "D) =CONTAR"],
+        correct: 0, a: "MEDIA"
     },
     {
-        q: "O que faz o atalho Ctrl + C no computador?",
-        options: ["A) Cola conteúdo.", "B) Copia conteúdo.", "C) Recorta conteúdo.", "D) Fecha a janela."],
-        correct: 1, a: "COPIAR"
+        q: "Qual fórmula mostra o maior valor no Excel?",
+        options: ["A) =MENOR", "B) =MAXIMO", "C) =MEDIA", "D) =SOMA"],
+        correct: 1, a: "MAXIMO"
     },
     {
-        q: "O que significa a sigla CPU?",
-        options: ["A) Controle de Processos Unidos.", "B) Unidade Central de Processamento.", "C) Computador Pessoal Único.", "D) Central de Programas Úteis."],
-        correct: 1, a: "PROCESSADOR"
+        q: "Qual fórmula mostra o menor valor no Excel?",
+        options: ["A) =MINIMO", "B) =MAXIMO", "C) =MEDIA", "D) =SE"],
+        correct: 0, a: "MINIMO"
     },
     {
-        q: "Qual prática ajuda na segurança digital?",
-        options: ["A) Usar senha fraca.", "B) Usar senhas fortes e únicas.", "C) Compartilhar senha com colegas.", "D) Anotar a senha em local público."],
-        correct: 1, a: "SENHA"
+        q: "Qual fórmula conta células preenchidas no Excel?",
+        options: ["A) =MEDIA", "B) =CONT.NÚM", "C) =SOMA", "D) =MAXIMO"],
+        correct: 1, a: "CONTAR"
     },
     {
-        q: "O que é um vírus de computador?",
-        options: ["A) Um hardware.", "B) Um software malicioso.", "C) Um cabo de rede.", "D) Um periférico externo."],
-        correct: 1, a: "VIRUS"
+        q: "Qual fórmula pode fazer uma condição lógica no Excel?",
+        options: ["A) =SE", "B) =MEDIA", "C) =SOMA", "D) =TEXTO"],
+        correct: 0, a: "LOGICA"
     },
     {
-        q: "Qual é a função do mouse no computador?",
-        options: ["A) Imprimir arquivos.", "B) Controlar o cursor na tela.", "C) Armazenar dados.", "D) Reproduzir áudio."],
-        correct: 1, a: "CURSOR"
+        q: "Qual letra representa uma coluna no Excel?",
+        options: ["A) Número", "B) Letra", "C) Símbolo", "D) Cor"],
+        correct: 1, a: "COLUNA"
     },
     {
-        q: "O que significa 'layout' na produção?",
-        options: ["A) Salário dos funcionários.", "B) Organização física dos equipamentos no espaço.", "C) Tipo de produto fabricado.", "D) Horário de trabalho."],
-        correct: 1, a: "LAYOUT"
+        q: "O que representam os números no Excel?",
+        options: ["A) Colunas", "B) Fórmulas", "C) Linhas", "D) Arquivos"],
+        correct: 2, a: "LINHA"
     },
     {
-        q: "O que é produtividade?",
-        options: ["A) Trabalhar mais horas.", "B) Produzir mais com menos recursos.", "C) Descansar mais durante o expediente.", "D) Diminuir a produção."],
-        correct: 1, a: "EFICIENCIA"
+        q: "Qual fórmula multiplica A1 por B1 no Excel?",
+        options: ["A) =A1+B1", "B) =A1/B1", "C) =A1*B1", "D) =A1-B1"],
+        correct: 2, a: "MULTIPLICAR"
     },
     {
-        q: "Qual é a função do sistema operacional?",
-        options: ["A) Limpar o computador fisicamente.", "B) Gerenciar hardware e software.", "C) Criar vírus.", "D) Desligar o computador sozinho."],
-        correct: 1, a: "SISTEMA"
+        q: "Qual fórmula divide A1 por B1 no Excel?",
+        options: ["A) =A1+B1", "B) =A1/B1", "C) =A1*B1", "D) =A1-B1"],
+        correct: 1, a: "DIVISAO"
     },
     {
-        q: "O que significa backup?",
-        options: ["A) Apagar arquivos desnecessários.", "B) Cópia de segurança dos dados.", "C) Formatar o computador.", "D) Desligar o sistema."],
-        correct: 1, a: "BACKUP"
+        q: "Qual atalho seleciona tudo na planilha do Excel?",
+        options: ["A) Ctrl + T", "B) Ctrl + C", "C) Ctrl + A", "D) Ctrl + V"],
+        correct: 2, a: "SELECIONAR"
     },
     {
-        q: "Qual atitude melhora a organização no trabalho?",
-        options: ["A) Deixar tudo espalhado.", "B) Não limpar o local de trabalho.", "C) Manter o ambiente limpo e organizado.", "D) Acumular materiais sem necessidade."],
-        correct: 2, a: "LIMPEZA"
+        q: "Qual gráfico é muito usado para comparar valores no Excel?",
+        options: ["A) Pizza", "B) Linha", "C) Barras/Colunas", "D) Área"],
+        correct: 2, a: "GRAFICO"
     }
 ];
 
+const questionBank2 = [
+    {
+        q: "O que significa HTML?",
+        options: ["A) Hyper Trainer Marking Language", "B) Hyper Text Markup Language", "C) High Text Machine Language", "D) Home Tool Markup Language"],
+        correct: 1, a: "HTML"
+    },
+    {
+        q: "Qual tag é usada para criar um título principal?",
+        options: ["A) <p>", "B) <title>", "C) <h1>", "D) <div>"],
+        correct: 2, a: "TITULO"
+    },
+    {
+        q: "Qual tag é usada para criar um parágrafo?",
+        options: ["A) <text>", "B) <p>", "C) <span>", "D) <h2>"],
+        correct: 1, a: "PARAGRAFO"
+    },
+    {
+        q: "Qual tag insere uma imagem no HTML?",
+        options: ["A) <image>", "B) <img>", "C) <picture>", "D) <src>"],
+        correct: 1, a: "IMAGEM"
+    },
+    {
+        q: "O CSS é usado para:",
+        options: ["A) Criar banco de dados", "B) Programar jogos", "C) Estilizar páginas web", "D) Criar servidores"],
+        correct: 2, a: "ESTILIZAR"
+    },
+    {
+        q: "Qual propriedade CSS altera a cor do texto?",
+        options: ["A) background", "B) color", "C) font-size", "D) border"],
+        correct: 1, a: "COLOR"
+    },
+    {
+        q: "Qual propriedade CSS altera a cor de fundo?",
+        options: ["A) color", "B) background-color", "C) border-color", "D) text-color"],
+        correct: 1, a: "FUNDO"
+    },
+    {
+        q: "Qual tag cria uma lista não ordenada no HTML?",
+        options: ["A) <ol>", "B) <li>", "C) <ul>", "D) <list>"],
+        correct: 2, a: "LISTA"
+    },
+    {
+        q: "Qual propriedade CSS altera o tamanho da fonte?",
+        options: ["A) font-size", "B) text-size", "C) size-font", "D) font-style"],
+        correct: 0, a: "TAMANHO"
+    },
+    {
+        q: "Qual símbolo é usado para selecionar uma classe no CSS?",
+        options: ["A) #", "B) .", "C) *", "D) @"],
+        correct: 1, a: "CLASSE"
+    },
+    {
+        q: "Qual símbolo é usado para selecionar um ID no CSS?",
+        options: ["A) .", "B) @", "C) #", "D) %"],
+        correct: 2, a: "SELETOR"
+    },
+    {
+        q: "Qual tag é usada para criar links no HTML?",
+        options: ["A) <a>", "B) <link>", "C) <href>", "D) <url>"],
+        correct: 0, a: "ANCORA"
+    },
+    {
+        q: "Qual atributo define o endereço de um link no HTML?",
+        options: ["A) src", "B) link", "C) href", "D) url"],
+        correct: 2, a: "HREF"
+    },
+    {
+        q: "Qual propriedade CSS deixa o texto centralizado?",
+        options: ["A) align", "B) text-align", "C) center-text", "D) justify-content"],
+        correct: 1, a: "ALINHAMENTO"
+    },
+    {
+        q: "O que significa CSS?",
+        options: ["A) Computer Style Sheets", "B) Cascading Style Sheets", "C) Creative Style System", "D) Color Style Syntax"],
+        correct: 1, a: "CASCATA"
+    },
+    {
+        q: "Qual tag representa o corpo da página no HTML?",
+        options: ["A) <head>", "B) <body>", "C) <main>", "D) <footer>"],
+        correct: 1, a: "CORPO"
+    },
+    {
+        q: "Qual propriedade CSS adiciona espaço interno?",
+        options: ["A) margin", "B) padding", "C) border", "D) spacing"],
+        correct: 1, a: "PADDING"
+    },
+    {
+        q: "Qual propriedade CSS adiciona espaço externo?",
+        options: ["A) padding", "B) margin", "C) border", "D) width"],
+        correct: 1, a: "MARGEM"
+    },
+    {
+        q: "Qual tag é usada para criar uma divisão na página?",
+        options: ["A) <section>", "B) <div>", "C) <main>", "D) <aside>"],
+        correct: 1, a: "DIVISAO"
+    },
+    {
+        q: "Qual propriedade CSS arredonda bordas?",
+        options: ["A) border-style", "B) border-radius", "C) radius-border", "D) curve"],
+        correct: 1, a: "BORDAS"
+    },
+    {
+        q: "Qual tag é usada para inserir uma folha de estilo CSS?",
+        options: ["A) <css>", "B) <style>", "C) <link>", "D) <script>"],
+        correct: 2, a: "FOLHA"
+    },
+    {
+        q: "Qual propriedade CSS controla a largura?",
+        options: ["A) height", "B) size", "C) width", "D) max-size"],
+        correct: 2, a: "LARGURA"
+    },
+    {
+        q: "Qual propriedade CSS controla a altura?",
+        options: ["A) size", "B) width", "C) height", "D) max-height"],
+        correct: 2, a: "ALTURA"
+    },
+    {
+        q: "Qual comando CSS deixa o elemento flexível?",
+        options: ["A) display:flex", "B) flex-box", "C) position:flex", "D) align:flex"],
+        correct: 0, a: "FLEX"
+    },
+    {
+        q: "Qual propriedade CSS cria sombra?",
+        options: ["A) shadow-box", "B) text-shadow", "C) box-shadow", "D) border-shadow"],
+        correct: 2, a: "SOMBRA"
+    },
+    {
+        q: "Qual tag contém informações da página, como título e links CSS?",
+        options: ["A) <body>", "B) <footer>", "C) <head>", "D) <section>"],
+        correct: 2, a: "CABECALHO"
+    },
+    {
+        q: "Qual tag define o rodapé da página no HTML?",
+        options: ["A) <footer>", "B) <bottom>", "C) <end>", "D) <rodape>"],
+        correct: 0, a: "RODAPE"
+    },
+    {
+        q: "O que faz a propriedade hover no CSS?",
+        options: ["A) Cria uma animação automática", "B) Aplica estilo quando o mouse passa sobre o elemento", "C) Deixa o texto piscando", "D) Centraliza elementos"],
+        correct: 1, a: "HOVER"
+    },
+    {
+        q: "Qual meta tag ajuda na responsividade das páginas?",
+        options: ["A) charset", "B) responsive", "C) viewport", "D) mobile"],
+        correct: 2, a: "VIEWPORT"
+    },
+    {
+        q: "Para que serve o Netlify?",
+        options: ["A) Criar banco de dados", "B) Hospedar sites e projetos frontend", "C) Fazer edição de imagens", "D) Criar aplicativos Android"],
+        correct: 1, a: "NETLIFY"
+    }
+];
+
+let selectedBank = null;
 let players = [];
 let currentPlayerIndex = 0;
 let timer = null;
@@ -1281,10 +1468,10 @@ function clearState() {
 }
 
 // DOM Element cache
+const screenYear = document.getElementById('year-screen');
 const screenSetup = document.getElementById('setup-screen');
 const screenGame = document.getElementById('game-screen');
 const screenVictory = document.getElementById('victory-screen');
-const btnStart = document.getElementById('start-btn');
 const playersList = document.getElementById('players-list');
 const gridContainer = document.getElementById('word-grid');
 const canvas = document.getElementById('selection-canvas');
@@ -1329,8 +1516,17 @@ function playSound(type) {
     }
 }
 
-btnStart.addEventListener('click', () => {
-    // Resume audio context to bypass autoplay restrictions on browsers
+document.getElementById('year-btn-1').addEventListener('click', () => {
+    selectedBank = questionBank1;
+    screenYear.classList.remove('active');
+    screenSetup.classList.add('active');
+});
+document.getElementById('year-btn-2').addEventListener('click', () => {
+    selectedBank = questionBank2;
+    screenYear.classList.remove('active');
+    screenSetup.classList.add('active');
+});
+document.getElementById('start-btn').addEventListener('click', () => {
     if(audioCtx.state === 'suspended') audioCtx.resume();
     startGame();
 });
@@ -1350,14 +1546,15 @@ btnFullscreen.addEventListener('click', () => {
 });
 document.addEventListener('fullscreenchange', updateFullscreenIcon);
 
-// Clique na logo cancela o jogo e volta ao setup
+// Clique na logo cancela o jogo e volta à seleção de ano
 document.getElementById('brand-logo-btn').addEventListener('click', () => {
     if (confirm('Cancelar o jogo e voltar para a tela inicial?')) {
         clearInterval(timer);
         clearState();
+        selectedBank = null;
         screenGame.classList.remove('active');
         screenVictory.classList.remove('active');
-        screenSetup.classList.add('active');
+        screenYear.classList.add('active');
     }
 });
 
@@ -1390,7 +1587,7 @@ function startGame() {
         .filter(p => p !== null);
 
     clearState(); // limpa pontos de sessão anterior
-    usedQuestions = [...questionBank].sort(() => Math.random() - 0.5);
+    usedQuestions = [...selectedBank].sort(() => Math.random() - 0.5);
 
     screenSetup.classList.remove('active');
     screenGame.classList.add('active');
@@ -1435,7 +1632,7 @@ function resizeCanvas() {
 
 function initRound() {
     if (usedQuestions.length === 0) {
-        usedQuestions = [...questionBank].sort(() => Math.random() - 0.5);
+        usedQuestions = [...selectedBank].sort(() => Math.random() - 0.5);
     }
     currentQ = usedQuestions.pop();
     drawnLines = [];
