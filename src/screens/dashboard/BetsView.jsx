@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useBetsOdds } from '../../hooks/useBetsOdds';
 
 const BET_GAMES = [
   { id: 'cassino', icon: '🎰', name: 'Cassino Educacional', desc: 'Simulador de apostas contra a banca', color: 'var(--t4)' },
@@ -9,6 +10,7 @@ const BET_GAMES = [
 
 export default function BetsView({ onStartGame }) {
   const [teams, setTeams] = useState([{ name: '' }, { name: '' }, { name: '' }, { name: '' }]);
+  const { odds, setOdd } = useBetsOdds();
   const colors = ['var(--t1)', 'var(--t2)', 'var(--t3)', 'var(--t4)'];
   const labels = ['Equipe 1', 'Equipe 2', 'Equipe 3 (Opcional)', 'Equipe 4 (Opcional)'];
 
@@ -66,6 +68,37 @@ export default function BetsView({ onStartGame }) {
           ))}
         </div>
       </div>
+
+      {/* Configuração de Probabilidade */}
+      <details className="glass" style={{ padding: '24px 30px', borderRadius: '20px' }}>
+        <summary style={{ fontWeight: '700', fontSize: '1.1rem', color: 'var(--text)', cursor: 'pointer', userSelect: 'none', listStyle: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          ⚙️ Configurações de Probabilidade
+          <span style={{ color: 'var(--muted)', fontSize: '0.85rem', fontWeight: '400' }}> — chances reais de vitória do jogador</span>
+        </summary>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '18px', marginTop: '20px' }}>
+          {BET_GAMES.map(game => (
+            <div key={game.id} style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
+              <span style={{ color: game.color, width: '180px', fontWeight: '700', fontSize: '0.95rem' }}>
+                {game.icon} {game.name}
+              </span>
+              <input
+                type="range" min={0} max={99} value={odds[game.id]}
+                onChange={e => setOdd(game.id, e.target.value)}
+                style={{ flex: 1, minWidth: '120px', accentColor: game.color }}
+              />
+              <span style={{ color: 'var(--t3)', fontWeight: '800', width: '48px', textAlign: 'right' }}>
+                {odds[game.id]}%
+              </span>
+              <span style={{ color: 'var(--muted)', fontSize: '0.8rem', width: '80px' }}>
+                Banca: {100 - odds[game.id]}%
+              </span>
+            </div>
+          ))}
+          <p style={{ color: 'var(--muted)', fontSize: '0.82rem', margin: 0 }}>
+            Estes valores afetam diretamente a lógica de cada jogo. Salvos automaticamente.
+          </p>
+        </div>
+      </details>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
         {BET_GAMES.map(game => (

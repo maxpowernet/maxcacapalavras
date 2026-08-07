@@ -4,20 +4,31 @@ import { useAuth } from '../hooks/useAuth';
 
 export default function AuthScreen() {
   const { login, register } = useAuth();
+  const { resetPassword } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
+  const [showReset, setShowReset] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setSuccess('');
     setLoading(true);
     try {
       if (isLogin) {
-        await login(email, password);
+        if (showReset) {
+          if (!email) throw new Error('Informe seu e-mail para receber o link.');
+          await resetPassword(email);
+          setSuccess('Link de redefinição enviado. Verifique seu e-mail.');
+          setShowReset(false);
+        } else {
+          await login(email, password);
+        }
       } else {
         if (name.trim().length < 2) throw new Error('Nome muito curto');
         await register(name, email, password);
@@ -73,14 +84,28 @@ export default function AuthScreen() {
             <input type="password" required value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" minLength={6} />
           </div>
 
+          {isLogin && (
+            <div style={{ textAlign: 'right', fontSize: '0.85rem' }}>
+              <button type="button" onClick={() => { setShowReset(!showReset); setError(''); setSuccess(''); }} style={{ background: 'none', border: 'none', color: 'var(--t1)', fontWeight: '700', cursor: 'pointer' }}>
+                {showReset ? 'Cancelar' : 'Esqueci a senha?'}
+              </button>
+            </div>
+          )}
+
           {error && (
             <div className="animate-fade" style={{ color: 'var(--danger)', fontSize: '0.88rem', textAlign: 'center', background: 'rgba(255,51,85,0.1)', border: '1px solid rgba(255,51,85,0.2)', borderRadius: '8px', padding: '10px' }}>
               {error}
             </div>
           )}
 
+          {success && (
+            <div className="animate-fade" style={{ color: 'var(--success)', fontSize: '0.88rem', textAlign: 'center', background: 'rgba(0,200,100,0.06)', border: '1px solid rgba(0,200,100,0.12)', borderRadius: '8px', padding: '10px' }}>
+              {success}
+            </div>
+          )}
+
           <button type="submit" className="btn btn-primary btn-lg" disabled={loading} style={{ marginTop: '6px' }}>
-            {loading ? '⏳ Aguarde...' : (isLogin ? '→ Entrar' : '✓ Cadastrar')}
+            {loading ? '⏳ Aguarde...' : (isLogin ? (showReset ? 'Enviar link de redefinição' : '→ Entrar') : '✓ Cadastrar')}
           </button>
         </form>
 

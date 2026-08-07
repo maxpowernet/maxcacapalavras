@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useGame } from '../../hooks/useGame';
 import { GameLayout } from './GameLayout';
+import { useBetsOdds } from '../../hooks/useBetsOdds';
 
 const EMOJIS = ['🍎', '🍌', '🍉'];
 
 export default function CassinoScreen() {
-  const { gameState, spinCassino, nextCassinoTurn } = useGame();
+  const { gameState, spinCassino, nextCassinoTurn, endBetsSession } = useGame();
+  const { odds } = useBetsOdds();
   const [spinning, setSpinning] = useState(false);
   const [slotReels, setSlotReels] = useState(['🎰', '🎰', '🎰']);
 
@@ -25,7 +27,7 @@ export default function CassinoScreen() {
       spins++;
       if (spins > 15) {
         clearInterval(interval);
-        spinCassino();
+        spinCassino(odds);
         setSpinning(false);
       }
     }, 100);
@@ -43,6 +45,16 @@ export default function CassinoScreen() {
     <GameLayout currentTeamIndex={gameState.currentTeamIndex} teams={gameState.teams} rightPanel={<CassinoStats />}>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, gap: '40px' }}>
         <h1 style={{ fontSize: '3rem', margin: 0, textShadow: '0 0 20px rgba(255,255,255,0.3)' }}>CASSINO EDUCACIONAL</h1>
+
+        {/* Odds badge */}
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <span style={{ background: 'rgba(57,255,20,0.12)', border: '1px solid rgba(57,255,20,0.3)', padding: '4px 14px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: '700', color: 'var(--t3)' }}>
+            ✅ Jogador: {odds.cassino}%
+          </span>
+          <span style={{ background: 'rgba(255,0,122,0.12)', border: '1px solid rgba(255,0,122,0.3)', padding: '4px 14px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: '700', color: 'var(--t2)' }}>
+            🏦 Banca: {100 - odds.cassino}%
+          </span>
+        </div>
         
         <div className="glass" style={{
           display: 'flex', gap: '20px', padding: '40px', borderRadius: '30px',
@@ -77,9 +89,12 @@ export default function CassinoScreen() {
             <p style={{ fontSize: '1.5rem', color: 'var(--muted)' }}>
               A Casa agradece sua contribuição.
             </p>
-            <button className="btn btn-secondary" style={{ marginTop: '20px', fontSize: '1.2rem', padding: '15px 40px' }} onClick={nextCassinoTurn}>
-              Próxima Equipe →
-            </button>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginTop: '20px' }}>
+              <button className="btn btn-secondary" style={{ fontSize: '1.2rem', padding: '15px 40px' }} onClick={nextCassinoTurn}>
+                Próxima Equipe →
+              </button>
+              <button className="btn btn-secondary btn-sm" onClick={endBetsSession} style={{ opacity: 0.7 }}>🏁 Encerrar</button>
+            </div>
           </div>
         )}
 

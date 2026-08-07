@@ -1,22 +1,34 @@
 import React, { useState } from 'react';
 import { useGame } from '../../hooks/useGame';
 import { GameLayout } from './GameLayout';
+import { useBetsOdds } from '../../hooks/useBetsOdds';
 
-const RARITIES = [
-  { name: 'Lixo (Comum)', chance: 0.85, multiplier: 0.1, color: '#888' },
-  { name: 'Incomum', chance: 0.10, multiplier: 0.5, color: '#00F2FF' },
-  { name: 'Raro', chance: 0.04, multiplier: 2.0, color: '#9D00FF' },
-  { name: 'Lendário', chance: 0.01, multiplier: 10.0, color: '#FFBD33' }
-];
+// Computa raridades com base no % de vitória configurado
+// rare + legendary somam playerWinPct; proporção 4:1 mantida
+function computeRarities(playerWinPct) {
+  const p = Math.max(0, Math.min(90, playerWinPct));
+  const legendary = p / 5;
+  const rare = (p * 4) / 5;
+  const uncommon = Math.min(10, 100 - p - 1);
+  const common = Math.max(0, 100 - p - uncommon);
+  return [
+    { name: 'Lixo (Comum)', chance: common / 100, multiplier: 0.1, color: '#888' },
+    { name: 'Incomum', chance: uncommon / 100, multiplier: 0.5, color: '#00F2FF' },
+    { name: 'Raro', chance: rare / 100, multiplier: 2.0, color: '#9D00FF' },
+    { name: 'Lendário', chance: legendary / 100, multiplier: 10.0, color: '#FFBD33' },
+  ];
+}
 
 export default function LootboxScreen() {
-  const { gameState, updateTeamScore, addHouseBalance, nextTurn } = useGame();
-  
+  const { gameState, updateTeamScore, addHouseBalance, nextTurn, endBetsSession } = useGame();
+  const { odds } = useBetsOdds();
+
   const [opening, setOpening] = useState(false);
   const [result, setResult] = useState(null);
-  
+
   const currentTeam = gameState.teams[gameState.currentTeamIndex];
   const boxPrice = 100;
+  const RARITIES = computeRarities(odds.lootbox);
 
   const handleOpenBox = () => {
     if (currentTeam.score < boxPrice || opening) return;
@@ -58,6 +70,16 @@ export default function LootboxScreen() {
     <GameLayout currentTeamIndex={gameState.currentTeamIndex} teams={gameState.teams} rightPanel={<HouseStats />}>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, gap: '30px' }}>
         <h1 style={{ fontSize: '2.5rem', color: 'var(--t1)' }}>CAIXAS MISTERIOSAS</h1>
+
+        {/* Odds badge */}
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <span style={{ background: 'rgba(57,255,20,0.12)', border: '1px solid rgba(57,255,20,0.3)', padding: '4px 14px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: '700', color: 'var(--t3)' }}>
+            ✅ Jogador: {odds.lootbox}%
+          </span>
+          <span style={{ background: 'rgba(255,0,122,0.12)', border: '1px solid rgba(255,0,122,0.3)', padding: '4px 14px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: '700', color: 'var(--t2)' }}>
+            🏦 Banca: {100 - odds.lootbox}%
+          </span>
+        </div>
         
         <div style={{ position: 'relative', width: '300px', height: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           {opening ? (
@@ -78,16 +100,20 @@ export default function LootboxScreen() {
             <button className="btn btn-primary" style={{ padding: '15px 40px', fontSize: '1.5rem', background: 'var(--t1)', color: '#000' }} onClick={handleOpenBox} disabled={currentTeam.score < boxPrice}>
               COMPRAR BAÚ (R$ {boxPrice})
             </button>
-            <p style={{ color: 'var(--muted)', textAlign: 'center' }}>
-              Chances: Lixo (85%) | Incomum (10%) | Raro (4%) | Lendário (1%)
+            <p style={{ color: 'var(--muted)', textAlign: 'center', fontSize: '0.9rem' }}>
+              Lixo ({(RARITIES[0].chance*100).toFixed(0)}%) | Incomum ({(RARITIES[1].chance*100).toFixed(0)}%) | Raro ({(RARITIES[2].chance*100).toFixed(1)}%) | Lendário ({(RARITIES[3].chance*100).toFixed(1)}%)
             </p>
+            <button className="btn btn-secondary btn-sm" onClick={endBetsSession} style={{ opacity: 0.65 }}>🏁 Encerrar Sessão</button>
           </>
         )}
 
         {result && (
-          <button className="btn btn-secondary" style={{ padding: '15px 40px', fontSize: '1.2rem' }} onClick={handleNext}>
-            Próxima Equipe →
-          </button>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button className="btn btn-secondary" style={{ padding: '15px 40px', fontSize: '1.2rem' }} onClick={handleNext}>
+              Próxima Equipe →
+            </button>
+            <button className="btn btn-secondary btn-sm" onClick={endBetsSession} style={{ opacity: 0.7 }}>🏁 Encerrar</button>
+          </div>
         )}
       </div>
     </GameLayout>

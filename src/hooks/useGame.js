@@ -432,7 +432,7 @@ export function useGame() {
 
   // ─── Cassino ────────────────────────────────────────────────
   
-  const spinCassino = () => {
+  const spinCassino = (currentOdds) => {
     setGameState(prev => {
       const currentTeam = prev.teams[prev.currentTeamIndex];
       if (currentTeam.score < prev.spinCost) {
@@ -440,7 +440,7 @@ export function useGame() {
       }
       
       const cost = prev.spinCost;
-      const isWin = Math.random() < 0.20; // 20% win chance
+      const isWin = Math.random() * 100 < (currentOdds?.cassino ?? 20);
       const prize = isWin ? cost * 2.5 : 0; // Se ganhar, leva 2.5x
       
       const newTeams = [...prev.teams];
@@ -480,6 +480,13 @@ export function useGame() {
 
   const nextCassinoTurn = () => {
     setGameState(prev => ({ ...prev, phase: 'quiz', lastSpinResult: null }));
+  };
+
+  const endBetsSession = () => {
+    setGameState(prev => {
+      _saveHistory(prev, prev.teams);
+      return { status: 'idle' };
+    });
   };
 
   // ─── Utilitários Financeiros (Crash, Lootbox, Roleta) ────────
@@ -540,6 +547,7 @@ export function useGame() {
     stealDuelo,
     spinCassino,
     nextCassinoTurn,
+    endBetsSession,
     updateTeamScore,
     addHouseBalance,
     nextTurn,

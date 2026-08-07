@@ -3,6 +3,7 @@ import { useHistory } from '../../hooks/useHistory';
 import { useGames } from '../../hooks/useGames';
 import { useClasses } from '../../hooks/useClasses';
 import PrintReport from '../../components/PrintReport';
+import { useBetsOdds } from '../../hooks/useBetsOdds';
 
 const MODE_LABELS = {
   cacapalavras: '🔍 Caça-Palavras',
@@ -12,6 +13,10 @@ const MODE_LABELS = {
   corrida: '🏃 Corrida',
   bomba: '💣 Bomba',
   duelo: '⚔️ Duelo',
+  cassino: '🎰 Cassino',
+  crash: '✈️ Aviaozinho',
+  lootbox: '📦 Loot Box',
+  roleta: '🎡 Roleta',
 };
 
 const MODE_COLORS = {
@@ -22,7 +27,13 @@ const MODE_COLORS = {
   corrida: '#39FF14',
   bomba: '#FF6633',
   duelo: '#33CCFF',
+  cassino: '#FFBD33',
+  crash: '#FF007A',
+  lootbox: '#00F2FF',
+  roleta: '#39FF14',
 };
+
+const BETS_MODES = ['cassino', 'crash', 'lootbox', 'roleta'];
 
 const MEDALS = ['🥇', '🥈', '🥉'];
 
@@ -30,6 +41,7 @@ export default function HistoryView() {
   const { history, clearHistory } = useHistory();
   const { games } = useGames();
   const { classes } = useClasses();
+  const { odds, setOdd } = useBetsOdds();
   const [printRecord, setPrintRecord] = useState(null);
 
   const formatTime = (seconds) => {
@@ -61,6 +73,31 @@ export default function HistoryView() {
           }}>🗑️ Limpar Histórico</button>
         )}
       </div>
+
+      {/* Config de Probabilidade dos Jogos Bets */}
+      <details className="glass" style={{ padding: '20px 24px', borderRadius: '16px' }}>
+        <summary style={{ fontWeight: '700', fontSize: '1rem', cursor: 'pointer', userSelect: 'none', listStyle: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          ⚙️ Probabilidades dos Jogos de Bets
+          <span style={{ color: 'var(--muted)', fontSize: '0.82rem', fontWeight: '400' }}> — configurar chances do jogador</span>
+        </summary>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '16px' }}>
+          {[{ id: 'cassino', icon: '🎰', name: 'Cassino Educacional', color: '#FFBD33' },
+            { id: 'crash',   icon: '✈️', name: 'Aviaozinho',          color: '#FF007A' },
+            { id: 'lootbox', icon: '📦', name: 'Loot Box',             color: '#00F2FF' },
+            { id: 'roleta',  icon: '🎡', name: 'Roleta',               color: '#39FF14' },
+          ].map(g => (
+            <div key={g.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+              <span style={{ color: g.color, width: '180px', fontWeight: '700', fontSize: '0.9rem' }}>{g.icon} {g.name}</span>
+              <input type="range" min={0} max={99} value={odds[g.id]}
+                onChange={e => setOdd(g.id, e.target.value)}
+                style={{ flex: 1, minWidth: '100px', accentColor: g.color }} />
+              <span style={{ color: 'var(--t3)', fontWeight: '800', minWidth: '40px' }}>{odds[g.id]}%</span>
+              <span style={{ color: 'var(--muted)', fontSize: '0.8rem', minWidth: '80px' }}>Banca: {100 - odds[g.id]}%</span>
+            </div>
+          ))}
+          <p style={{ color: 'var(--muted)', fontSize: '0.8rem', margin: 0 }}>Salvos automaticamente e aplicados nos jogos imediatamente.</p>
+        </div>
+      </details>
 
       {history.length === 0 ? (
         <div className="glass" style={{ padding: '50px', textAlign: 'center', color: 'var(--muted)' }}>
@@ -101,6 +138,11 @@ export default function HistoryView() {
               const cls = classes.find(c => c.id === h.classId);
               const sortedTeams = h.teams ? [...h.teams].sort((a, b) => b.score - a.score) : [];
               const modeColor = MODE_COLORS[h.gameMode] || MODE_COLORS.cacapalavras;
+              const isBets = BETS_MODES.includes(h.gameMode);
+              const modeLabel = MODE_LABELS[h.gameMode] || MODE_LABELS.cacapalavras;
+              const recordTitle = isBets ? modeLabel : (game?.name || 'Jogo Removido');
+              const recordSubtitle = isBets ? 'Sessão de Apostas' : (cls?.name || 'Turma Removida');
+              const scoreUnit = isBets ? 'R$' : 'pts';
 
               return (
                 <div key={h.id} className="glass" style={{
@@ -118,10 +160,10 @@ export default function HistoryView() {
                         {(MODE_LABELS[h.gameMode] || MODE_LABELS.cacapalavras).split(' ')[0]}
                       </div>
                       <div>
-                        <h3 style={{ margin: '0 0 4px' }}>{game?.name || 'Jogo Removido'}</h3>
+                        <h3 style={{ margin: '0 0 4px' }}>{recordTitle}</h3>
                         <div style={{ color: 'var(--muted)', fontSize: '0.85rem' }}>
-                          {cls?.name || 'Turma Removida'} &nbsp;·&nbsp;
-                          <span style={{ color: modeColor }}>{(MODE_LABELS[h.gameMode] || MODE_LABELS.cacapalavras).split(' ').slice(1).join(' ')}</span>
+                          {recordSubtitle} &nbsp;·&nbsp;
+                          <span style={{ color: modeColor }}>{modeLabel.split(' ').slice(1).join(' ')}</span>
                         </div>
                       </div>
                     </div>
@@ -154,7 +196,7 @@ export default function HistoryView() {
                           <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <strong>{MEDALS[idx] || `#${idx + 1}`}</strong> {t.name}
                           </span>
-                          <span style={{ fontWeight: '800' }}>{t.score} pts</span>
+                          <span style={{ fontWeight: '800' }}>{isBets ? `R$ ${Math.floor(t.score)}` : `${t.score} ${scoreUnit}`}</span>
                         </div>
                       ))}
                     </div>

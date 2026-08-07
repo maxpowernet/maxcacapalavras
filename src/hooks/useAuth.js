@@ -56,6 +56,17 @@ export function useAuth() {
     }
   };
 
+  const resetPassword = async (email) => {
+    try {
+      const { sendPasswordResetEmail } = await import('firebase/auth');
+      await sendPasswordResetEmail(auth, email);
+      return true;
+    } catch (err) {
+      console.error(err);
+      throw new Error(getFriendlyErrorMessage(err.code) || err.message);
+    }
+  };
+
   const login = async (email, password) => {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
@@ -75,5 +86,5 @@ export function useAuth() {
     }
   };
 
-  return { user, register, login, logout };
+  return { user, register, login, logout, resetPassword };
 }

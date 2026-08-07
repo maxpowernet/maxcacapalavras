@@ -7,12 +7,18 @@ import InstructorDashboard from './screens/InstructorDashboard';
 import TeamSetupScreen from './screens/TeamSetupScreen';
 import GameScreen from './screens/GameScreen';
 import VictoryScreen from './screens/VictoryScreen';
+import MobileControlPanel from './screens/MobileControlPanel';
+
+// userAgent + width — covers phones and small tablets
+const isMobileDevice = () =>
+  /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth < 768;
 
 export default function App() {
   const { user, authLoading, setQuestions, isLightMode, toggleTheme } = useAppContext();
   const { gameState, startGame } = useGame();
   
   const [showTeamSetup, setShowTeamSetup] = useState(false);
+  const isMobile = isMobileDevice();
 
   const initials = user?.name?.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase() || '';
   const AVATAR_COLORS = ['#00F2FF', '#FF007A', '#39FF14', '#FFBD33'];
@@ -106,6 +112,11 @@ export default function App() {
         <AuthScreen />
       </>
     );
+  }
+
+  // 3. Mobile → sempre painel Game Master
+  if (isMobile) {
+    return <MobileControlPanel />;
   }
 
   // 2. Logado, mas não em jogo

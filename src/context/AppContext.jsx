@@ -17,6 +17,9 @@ export function AppProvider({ children }) {
   const [questions, setQuestions] = useState([]);
   const [gameState, setGameState] = useState({ status: 'idle' });
 
+  const ODDS_DEFAULTS = { cassino: 20, crash: 10, lootbox: 5, roleta: 45 };
+  const [odds, setOddsState] = useState(ODDS_DEFAULTS);
+
   const themeHook = useTheme();
 
   // Create refs for gameState so onSnapshot listeners don't use stale values
@@ -137,6 +140,7 @@ export function AppProvider({ children }) {
       setHistory([]);
       setQuestions([]);
       setGameState({ status: 'idle' });
+      setOddsState({ cassino: 20, crash: 10, lootbox: 5, roleta: 45 });
       return;
     }
 
@@ -190,14 +194,34 @@ export function AppProvider({ children }) {
       }
     });
 
+    // Listen to bets odds
+    const oddsDocRef = doc(db, 'users', userId, 'state', 'odds');
+    const unsubscribeOdds = onSnapshot(oddsDocRef, (docSnap) => {
+      if (docSnap.exists()) {
+        setOddsState(prev => ({ ...prev, ...docSnap.data() }));
+      }
+    });
+
     return () => {
       unsubscribeClasses();
       unsubscribeGames();
       unsubscribeHistory();
       unsubscribeQuestions();
       unsubscribeGameState();
+      unsubscribeOdds();
     };
   }, [user]);
+
+  const setOdd = (game, value) => {
+    if (!user) return;
+    const clamped = Math.max(0, Math.min(99, Number(value)));
+    setOddsState(prev => {
+      const next = { ...prev, [game]: clamped };
+      setDoc(doc(db, 'users', user.userId, 'state', 'odds'), next)
+        .catch(err => console.error('Erro ao salvar odds:', err));
+      return next;
+    });
+  };
 
   // Sync gameState back to Firestore when it is mutated locally by useGame.js
   const setGameStateWithFirebase = async (updater) => {
@@ -221,6 +245,7 @@ export function AppProvider({ children }) {
       history, setHistory,
       questions, setQuestions,
       gameState, setGameState: setGameStateWithFirebase,
+      odds, setOdd,
       ...themeHook
     }}>
       {children}
