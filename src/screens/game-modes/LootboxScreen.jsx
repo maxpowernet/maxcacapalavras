@@ -67,7 +67,7 @@ export default function LootboxScreen() {
   };
 
   return (
-    <GameLayout currentTeamIndex={gameState.currentTeamIndex} teams={gameState.teams} rightPanel={<HouseStats />}>
+    <GameLayout currentTeamIndex={gameState.currentTeamIndex} teams={gameState.teams} rightPanel={<HouseStats />} showFullscreen>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, gap: '30px' }}>
         <h1 style={{ fontSize: '2.5rem', color: 'var(--t1)' }}>CAIXAS MISTERIOSAS</h1>
 

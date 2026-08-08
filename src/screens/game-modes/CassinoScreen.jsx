@@ -42,7 +42,7 @@ export default function CassinoScreen() {
   }, [gameState.phase, gameState.lastSpinResult, spinning]);
 
   return (
-    <GameLayout currentTeamIndex={gameState.currentTeamIndex} teams={gameState.teams} rightPanel={<CassinoStats />}>
+    <GameLayout currentTeamIndex={gameState.currentTeamIndex} teams={gameState.teams} rightPanel={<CassinoStats />} showFullscreen>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, gap: '40px' }}>
         <h1 style={{ fontSize: '3rem', margin: 0, textShadow: '0 0 20px rgba(255,255,255,0.3)' }}>CASSINO EDUCACIONAL</h1>
 

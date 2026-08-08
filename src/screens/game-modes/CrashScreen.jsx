@@ -69,7 +69,7 @@ export default function CrashScreen() {
   };
 
   return (
-    <GameLayout currentTeamIndex={gameState.currentTeamIndex} teams={gameState.teams} rightPanel={<HouseStats />}>
+    <GameLayout currentTeamIndex={gameState.currentTeamIndex} teams={gameState.teams} rightPanel={<HouseStats />} showFullscreen>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, gap: '24px' }}>
         <h1 style={{ fontSize: '2.5rem', color: 'var(--t2)', margin: 0 }}>AVIÃOZINHO (CRASH)</h1>
 

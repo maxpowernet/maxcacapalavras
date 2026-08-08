@@ -95,7 +95,7 @@ export function useGame() {
       scoreType,
       winGoal,
       paused: false,
-      teams: teams.map((t, idx) => ({ id: idx, name: t.name, score: ['cassino', 'crash', 'lootbox', 'roleta'].includes(mode) ? 1000 : 0 })),
+      teams: teams.map((t, idx) => ({ id: idx, name: t.name, score: ['cassino', 'crash', 'lootbox', 'roleta'].includes(mode) ? 500 : 0 })),
       currentTeamIndex: 0,
       usedQuestionIds: [],
       // Bug 2 fix: store all IDs inside gameState so _nextPool can use prev.allQuestionIds

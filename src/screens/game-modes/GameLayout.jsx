@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { useGame } from '../../hooks/useGame';
 import BrandLogo from '../../components/BrandLogo';
 import PlayerCard from '../../components/PlayerCard';
@@ -6,10 +7,26 @@ import Scoreboard from '../../components/Scoreboard';
 const COLORS = ['var(--t1)', 'var(--t2)', 'var(--t3)', 'var(--t4)'];
 const HEX_COLORS = ['#00F2FF', '#FF007A', '#39FF14', '#FFBD33'];
 
-export function GameLayout({ children, rightPanel, currentTeamIndex, teams, hideSidebars = false }) {
+export function GameLayout({ children, rightPanel, currentTeamIndex, teams, hideSidebars = false, showFullscreen = false }) {
   const { togglePause } = useGame();
   const activeColor = COLORS[currentTeamIndex % 4];
   const currentTeam = teams[currentTeamIndex];
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    if (!showFullscreen) return;
+    const handler = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', handler);
+    return () => document.removeEventListener('fullscreenchange', handler);
+  }, [showFullscreen]);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen();
+    } else {
+      document.exitFullscreen();
+    }
+  };
 
   if (hideSidebars) {
     return (
@@ -18,6 +35,7 @@ export function GameLayout({ children, rightPanel, currentTeamIndex, teams, hide
           <BrandLogo small interactive onClick={togglePause} />
         </div>
         {children}
+        {showFullscreen && <FullscreenBtn isFullscreen={isFullscreen} onToggle={toggleFullscreen} />}
         <style>{`@keyframes spin { 100% { transform: rotate(360deg); } }`}</style>
       </div>
     );
@@ -60,8 +78,31 @@ export function GameLayout({ children, rightPanel, currentTeamIndex, teams, hide
           {rightPanel}
         </aside>
       </div>
+      {showFullscreen && <FullscreenBtn isFullscreen={isFullscreen} onToggle={toggleFullscreen} />}
       <style>{`@keyframes spin { 100% { transform: rotate(360deg); } }`}</style>
     </div>
+  );
+}
+
+function FullscreenBtn({ isFullscreen, onToggle }) {
+  return (
+    <button
+      onClick={onToggle}
+      title={isFullscreen ? 'Sair da tela cheia' : 'Tela cheia'}
+      style={{
+        position: 'fixed', bottom: '20px', right: '20px', zIndex: 9999,
+        width: '44px', height: '44px', borderRadius: '50%',
+        background: 'rgba(0,0,0,0.75)', border: '1px solid rgba(255,255,255,0.25)',
+        color: '#fff', fontSize: '1.3rem', cursor: 'pointer',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        backdropFilter: 'blur(8px)', transition: 'background 0.2s',
+        boxShadow: '0 2px 12px rgba(0,0,0,0.4)',
+      }}
+      onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.15)'}
+      onMouseLeave={e => e.currentTarget.style.background = 'rgba(0,0,0,0.75)'}
+    >
+      {isFullscreen ? '\u29C1' : '\u29C0'}
+    </button>
   );
 }
 
