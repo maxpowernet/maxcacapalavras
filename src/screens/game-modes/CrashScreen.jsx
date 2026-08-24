@@ -3,11 +3,14 @@ import { useGame } from '../../hooks/useGame';
 import { GameLayout } from './GameLayout';
 import { useBetsOdds } from '../../hooks/useBetsOdds';
 
+const MIN_BET = 10;
+
 export default function CrashScreen() {
   const { gameState, updateTeamScore, addHouseBalance, nextTurn, endBetsSession } = useGame();
   const { odds } = useBetsOdds();
 
-  const [betAmount, setBetAmount] = useState(100);
+  // Estado como string para permitir digitação livre sem forçar limites durante edição
+  const [betAmountStr, setBetAmountStr] = useState('100');
   const [multiplier, setMultiplier] = useState(1.0);
   const [status, setStatus] = useState('idle'); // idle, playing, crashed, cashed_out
 
@@ -20,11 +23,21 @@ export default function CrashScreen() {
     return () => clearInterval(timerRef.current);
   }, []);
 
-  const handleStart = () => {
-    if (currentTeam.score < betAmount) return;
+  // Valor numérico derivado do input (undefined quando inválido)
+  const betValue = parseInt(betAmountStr, 10);
+  const betError = (() => {
+    if (!betAmountStr.trim() || isNaN(betValue) || betValue <= 0) return 'Digite um valor válido.';
+    if (betValue < MIN_BET) return `Aposta mínima: ${MIN_BET} pts.`;
+    if (betValue > currentTeam.score) return 'Saldo insuficiente!';
+    return null;
+  })();
+  const canBet = betError === null;
 
-    updateTeamScore(gameState.currentTeamIndex, -betAmount);
-    addHouseBalance(betAmount);
+  const handleStart = () => {
+    if (!canBet) return;
+
+    updateTeamScore(gameState.currentTeamIndex, -betValue);
+    addHouseBalance(betValue);
 
     // Usar odds configurado: se rand >= playerWinChance → crash instantâneo
     const playerWinChance = odds.crash / 100;
@@ -55,7 +68,7 @@ export default function CrashScreen() {
     if (status !== 'playing') return;
     clearInterval(timerRef.current);
 
-    const prize = betAmount * multiplier;
+    const prize = betValue * multiplier;
     updateTeamScore(gameState.currentTeamIndex, prize);
     addHouseBalance(-prize);
 
@@ -65,7 +78,15 @@ export default function CrashScreen() {
   const handleNext = () => {
     setStatus('idle');
     setMultiplier(1.0);
+    setBetAmountStr('100');
     nextTurn();
+  };
+
+  // Atalhos de aposta rápida
+  const quickAdd = (amount) => {
+    const current = parseInt(betAmountStr, 10) || 0;
+    const next = Math.min(current + amount, currentTeam.score);
+    setBetAmountStr(String(next));
   };
 
   return (
@@ -97,19 +118,83 @@ export default function CrashScreen() {
         </div>
 
         {status === 'idle' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center' }}>
-            <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', alignItems: 'center' }}>
+
+            {/* Info de saldo */}
+            <div style={{ fontSize: '0.85rem', color: 'var(--muted)', display: 'flex', gap: '16px' }}>
+              <span>💰 Saldo: <strong style={{ color: 'var(--text)' }}>{Math.floor(currentTeam.score)} pts</strong></span>
+              <span>📉 Mín: <strong style={{ color: 'var(--t3)' }}>{MIN_BET} pts</strong></span>
+              <span>📈 Máx: <strong style={{ color: 'var(--t1)' }}>{Math.floor(currentTeam.score)} pts</strong></span>
+            </div>
+
+            {/* Input de aposta + botão principal */}
+            <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
               <label style={{ fontSize: '1.2rem' }}>Aposta:</label>
               <input
-                type="number" value={betAmount}
-                onChange={e => setBetAmount(Math.max(10, Number(e.target.value)))}
-                style={{ padding: '10px', fontSize: '1.5rem', width: '150px', borderRadius: '10px', textAlign: 'center' }}
+                type="number"
+                value={betAmountStr}
+                min={MIN_BET}
+                max={currentTeam.score}
+                onChange={e => setBetAmountStr(e.target.value)}
+                style={{
+                  padding: '10px',
+                  fontSize: '1.5rem',
+                  width: '160px',
+                  borderRadius: '10px',
+                  textAlign: 'center',
+                  border: betError ? '2px solid var(--danger)' : '2px solid var(--panel-b)',
+                  background: 'rgba(0,0,0,0.4)',
+                  color: '#fff',
+                  outline: 'none',
+                }}
               />
-              <button className="btn btn-primary" style={{ padding: '15px 40px', fontSize: '1.5rem', background: 'var(--t2)' }} onClick={handleStart} disabled={currentTeam.score < betAmount}>
-                APOSTAR E DECOLAR
+              <button
+                className="btn btn-primary"
+                style={{ padding: '15px 36px', fontSize: '1.4rem', background: 'var(--t2)', opacity: canBet ? 1 : 0.45 }}
+                onClick={handleStart}
+                disabled={!canBet}
+              >
+                ✈️ APOSTAR E DECOLAR
               </button>
             </div>
-            {currentTeam.score < betAmount && <p style={{ color: 'var(--t2)', margin: 0 }}>Saldo insuficiente!</p>}
+
+            {/* Mensagem de erro */}
+            {betError && (
+              <p style={{ color: 'var(--danger)', margin: 0, fontSize: '0.95rem', fontWeight: 600 }}>
+                ⚠️ {betError}
+              </p>
+            )}
+
+            {/* Botões de atalho rápido */}
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
+              {[
+                { label: 'Mín (10)', action: () => setBetAmountStr(String(MIN_BET)) },
+                { label: '+10',      action: () => quickAdd(10) },
+                { label: '+50',      action: () => quickAdd(50) },
+                { label: 'Tudo',     action: () => setBetAmountStr(String(Math.floor(currentTeam.score))) },
+              ].map(({ label, action }) => (
+                <button
+                  key={label}
+                  onClick={action}
+                  style={{
+                    padding: '6px 16px',
+                    borderRadius: '20px',
+                    border: '1px solid var(--panel-b)',
+                    background: 'rgba(255,255,255,0.07)',
+                    color: 'var(--text)',
+                    cursor: 'pointer',
+                    fontSize: '0.85rem',
+                    fontWeight: 600,
+                    transition: 'background 0.2s',
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.15)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.07)'}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
             <button className="btn btn-secondary btn-sm" onClick={endBetsSession} style={{ opacity: 0.65, marginTop: '4px' }}>
               🏁 Encerrar Sessão
             </button>
