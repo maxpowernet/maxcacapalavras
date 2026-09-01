@@ -1,0 +1,23 @@
+// Banco fixo de perguntas institucionais usado pelo Cassino Institucional.
+export const institutionalQuestions = [
+  { id: 1, q: 'Em qual rio está localizada a UHE Peixe Angical da Enerpeixe?', options: ['Rio Araguaia', 'Rio Tocantins', 'Rio São Francisco'], correct: 1 },
+  { id: 2, q: 'Qual é a potência instalada da usina hidrelétrica da Enerpeixe?', options: ['498,75 MW', '250,00 MW', '1.000 MW'], correct: 0 },
+  { id: 3, q: 'Qual empresa é a acionista majoritária da Enerpeixe S.A. com 60% das ações?', options: ['AXIA Energia', 'EDP Energias do Brasil S.A.', 'Eletrobras'], correct: 1 },
+  { id: 4, q: 'Qual é a extensão da Linha de Transmissão que liga a usina à subestação de Peixe II?', options: ['10 km', '20 km', '50 km'], correct: 1 },
+  { id: 5, q: 'Quem ocupa o cargo de Diretora Presidente da Enerpeixe?', options: ['Sra. Stella Maris Moreira Fuao', 'Sra. Maria das Graças Silva', 'Sra. Ana Paula Ribeiro'], correct: 0 },
+  { id: 6, q: 'Qual é a missão principal da Enerpeixe?', options: ['Gerar energia elétrica para atender ao crescimento do Brasil, com qualidade e respeito sócio-ambiental', 'Atuar exclusivamente na comercialização de energia solar urbana', 'Gerar energia térmica sem foco em licenciamento ambiental'], correct: 0 },
+  { id: 7, q: 'Qual das opções NÃO é um dos valores declarados da Enerpeixe?', options: ['Transparência', 'Rigor', 'Improvisação'], correct: 2 },
+  { id: 8, q: 'O que significa o valor "Rigor" dentro da cultura da Enerpeixe?', options: ['Adotar o rigor como regra geral de atuação e base de decisão', 'Aplicar advertências diárias aos prestadores de serviço', 'Cancelar investimentos em treinamentos de equipe'], correct: 0 },
+  { id: 9, q: 'Qual instituição é responsável por calcular e divulgar o Fator de Alavancagem?', options: ['CCEE (Câmara de Comercialização de Energia Elétrica)', 'ANEEL (Agência Nacional de Energia Elétrica)', 'IBAMA'], correct: 0 },
+  { id: 10, q: 'No Fator de Alavancagem da CCEE, qual é a regra quanto ao risco financeiro?', options: ['Quanto menor o índice, menor o risco', 'Quanto maior o índice, menor o risco', 'O índice não indica nenhum nível de risco'], correct: 0 },
+  { id: 11, q: 'Com qual frequência a CCEE publica o Fator de Alavancagem das empresas?', options: ['Diariamente', 'Semanalmente', 'Anualmente'], correct: 1 },
+  { id: 12, q: 'A certificação ABNT NBR ISO 9001 obtida pela Enerpeixe refere-se a qual sistema?', options: ['Sistema de Gestão de Qualidade', 'Sistema de Gestão Ambiental', 'Sistema de Segurança da Informação'], correct: 0 },
+  { id: 13, q: 'Qual norma ISO atesta a eficiência do Sistema de Gestão Ambiental da Enerpeixe?', options: ['ISO 9001', 'ISO 14001', 'ISO 45001'], correct: 1 },
+  { id: 14, q: 'A certificação ABNT NBR ISO 45001 é voltada para qual área?', options: ['Responsabilidade Social Corporativa', 'Sistema de Gestão de Saúde e Segurança do Trabalho', 'Governança Financeira'], correct: 1 },
+  { id: 15, q: 'Qual prêmio de excelência em Segurança do Trabalho a Enerpeixe conquistou?', options: ['Medalha Eloy Chaves', 'Troféu Ouro ANEEL', 'Prêmio Verde de Sustentabilidade'], correct: 0 },
+  { id: 16, q: 'O que significa a sigla EPI na Segurança do Trabalho?', options: ['Equipamento de Proteção Individual', 'Equipamento de Prevenção Interna', 'Elemento de Proteção Industrial'], correct: 0 },
+  { id: 17, q: 'Qual é a função principal da CIPA nas empresas?', options: ['Prevenir acidentes e doenças decorrentes do trabalho', 'Auditar os balanços financeiros', 'Controlar a escala de férias'], correct: 0 },
+  { id: 18, q: 'Qual Norma Regulamentadora (NR) define as regras para Trabalho em Altura?', options: ['NR-10', 'NR-35', 'NR-12'], correct: 1 },
+  { id: 19, q: 'Qual Norma Regulamentadora trata da segurança em Instalações e Serviços em Eletricidade?', options: ['NR-10', 'NR-18', 'NR-33'], correct: 0 },
+  { id: 20, q: 'O que significa a sigla DDS realizada antes do início do expediente de trabalho?', options: ['Diálogo Diário de Segurança', 'Documento de Direção Segura', 'Diagnóstico Direto de Saúde'], correct: 0 },
+];

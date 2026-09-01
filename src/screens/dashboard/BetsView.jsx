@@ -3,6 +3,7 @@ import { useBetsOdds } from '../../hooks/useBetsOdds';
 
 const BET_GAMES = [
   { id: 'cassino', icon: '🎰', name: 'Cassino Educacional', desc: 'Simulador de apostas contra a banca', color: 'var(--t4)' },
+  { id: 'cassino_inst', icon: '⛑️', name: 'Cassino Institucional', desc: 'Acerte a pergunta sobre a empresa para poder girar', color: 'var(--t1)' },
   { id: 'crash', icon: '✈️', name: 'Aviãozinho', desc: 'Saque antes que o multiplicador estoure', color: 'var(--t2)' },
   { id: 'lootbox', icon: '📦', name: 'Loot Box', desc: 'Compre baús de diferentes raridades', color: 'var(--t1)' },
   { id: 'roleta', icon: '🎡', name: 'Roleta', desc: 'Aposte em cores. Cuidado com o zero verde!', color: 'var(--t3)' },

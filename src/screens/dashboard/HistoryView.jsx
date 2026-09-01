@@ -14,6 +14,7 @@ const MODE_LABELS = {
   bomba: '💣 Bomba',
   duelo: '⚔️ Duelo',
   cassino: '🎰 Cassino',
+  cassino_inst: '⛑️ Cassino Institucional',
   crash: '✈️ Aviaozinho',
   lootbox: '📦 Loot Box',
   roleta: '🎡 Roleta',
@@ -28,12 +29,13 @@ const MODE_COLORS = {
   bomba: '#FF6633',
   duelo: '#33CCFF',
   cassino: '#FFBD33',
+  cassino_inst: '#AA88FF',
   crash: '#FF007A',
   lootbox: '#00F2FF',
   roleta: '#39FF14',
 };
 
-const BETS_MODES = ['cassino', 'crash', 'lootbox', 'roleta'];
+const BETS_MODES = ['cassino', 'cassino_inst', 'crash', 'lootbox', 'roleta'];
 
 const MEDALS = ['🥇', '🥈', '🥉'];
 

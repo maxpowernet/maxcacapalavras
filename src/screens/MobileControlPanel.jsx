@@ -3,6 +3,7 @@ import { useGame } from '../hooks/useGame';
 
 const BET_GAMES = [
   { id: 'cassino', icon: '🎰', name: 'Cassino', color: 'var(--t4)' },
+  { id: 'cassino_inst', icon: '⛑️', name: 'Cassino Institucional', color: 'var(--t1)' },
   { id: 'crash',   icon: '✈️', name: 'Aviãozinho', color: 'var(--t2)' },
   { id: 'lootbox', icon: '📦', name: 'Loot Box',   color: 'var(--t1)' },
   { id: 'roleta',  icon: '🎡', name: 'Roleta',     color: 'var(--t3)' },
@@ -10,6 +11,7 @@ const BET_GAMES = [
 
 const MODE_LABELS = {
   cassino: '🎰 Cassino',
+  cassino_inst: '⛑️ Cassino Institucional',
   crash: '✈️ Aviãozinho',
   lootbox: '📦 Loot Box',
   roleta: '🎡 Roleta',
@@ -27,7 +29,7 @@ export default function MobileControlPanel() {
   const { gameState, togglePause } = useGame();
 
   const isPlaying = gameState.status === 'playing';
-  const isBetsMode = ['cassino', 'crash', 'lootbox', 'roleta'].includes(gameState.gameMode);
+  const isBetsMode = ['cassino', 'cassino_inst', 'crash', 'lootbox', 'roleta'].includes(gameState.gameMode);
 
   return (
     <div style={{

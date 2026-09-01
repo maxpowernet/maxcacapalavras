@@ -17,7 +17,7 @@ export function AppProvider({ children }) {
   const [questions, setQuestions] = useState([]);
   const [gameState, setGameState] = useState({ status: 'idle' });
 
-  const ODDS_DEFAULTS = { cassino: 20, crash: 10, lootbox: 5, roleta: 45 };
+  const ODDS_DEFAULTS = { cassino: 20, crash: 10, lootbox: 5, roleta: 45, cassino_inst: 20 };
   const [odds, setOddsState] = useState(ODDS_DEFAULTS);
 
   const themeHook = useTheme();
@@ -140,7 +140,7 @@ export function AppProvider({ children }) {
       setHistory([]);
       setQuestions([]);
       setGameState({ status: 'idle' });
-      setOddsState({ cassino: 20, crash: 10, lootbox: 5, roleta: 45 });
+      setOddsState({ cassino: 20, crash: 10, lootbox: 5, roleta: 45, cassino_inst: 20 });
       return;
     }
 

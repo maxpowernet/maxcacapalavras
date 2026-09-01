@@ -95,7 +95,12 @@ export function useGame() {
       scoreType,
       winGoal,
       paused: false,
-      teams: teams.map((t, idx) => ({ id: idx, name: t.name, score: ['cassino', 'crash', 'lootbox', 'roleta'].includes(mode) ? 500 : 0 })),
+      teams: teams.map((t, idx) => ({
+        id: idx,
+        name: t.name,
+        score: ['cassino', 'crash', 'lootbox', 'roleta', 'cassino_inst'].includes(mode) ? 500 : 0,
+        ...(mode === 'cassino_inst' ? { candies: 0, instStreak: 0 } : {}),
+      })),
       currentTeamIndex: 0,
       usedQuestionIds: [],
       // Bug 2 fix: store all IDs inside gameState so _nextPool can use prev.allQuestionIds
@@ -482,6 +487,77 @@ export function useGame() {
     setGameState(prev => ({ ...prev, phase: 'quiz', lastSpinResult: null }));
   };
 
+  // ─── Cassino Institucional (mesma mecânica + streak de bombons) ─────
+
+  const spinCassinoInstitucional = (currentOdds) => {
+    setGameState(prev => {
+      const currentTeam = prev.teams[prev.currentTeamIndex];
+      if (currentTeam.score < prev.spinCost) {
+        return prev;
+      }
+
+      const cost = prev.spinCost;
+      const isWin = Math.random() * 100 < (currentOdds?.cassino_inst ?? 20);
+      const prize = isWin ? cost * 2.5 : 0;
+
+      const newTeams = [...prev.teams];
+      const team = { ...currentTeam };
+      team.score = currentTeam.score - cost + prize;
+
+      // A cada 2 vitórias seguidas ganha 1 bombom; ao perder, devolve 1 se tiver algum guardado
+      let candyAwarded = false;
+      let candyReturned = false;
+      const prevStreak = team.instStreak || 0;
+      const prevCandies = team.candies || 0;
+      if (isWin) {
+        const newStreak = prevStreak + 1;
+        if (newStreak % 2 === 0) {
+          team.candies = prevCandies + 1;
+          team.instStreak = 0;
+          candyAwarded = true;
+        } else {
+          team.instStreak = newStreak;
+        }
+      } else {
+        team.instStreak = 0;
+        if (prevCandies > 0) {
+          team.candies = prevCandies - 1;
+          candyReturned = true;
+        }
+      }
+      newTeams[prev.currentTeamIndex] = team;
+
+      const newHouseBalance = (prev.houseBalance || 0) + cost - prize;
+
+      const emojis = ['⛑️', '🔧', '🚛', '🦺'];
+      let resultEmojis;
+      if (isWin) {
+        const winEmoji = emojis[Math.floor(Math.random() * emojis.length)];
+        resultEmojis = [winEmoji, winEmoji, winEmoji];
+      } else {
+        resultEmojis = [
+          emojis[Math.floor(Math.random() * emojis.length)],
+          emojis[Math.floor(Math.random() * emojis.length)],
+          emojis[Math.floor(Math.random() * emojis.length)],
+        ];
+        if (resultEmojis[0] === resultEmojis[1] && resultEmojis[1] === resultEmojis[2]) {
+          resultEmojis[2] = emojis[(emojis.indexOf(resultEmojis[2]) + 1) % emojis.length];
+        }
+      }
+
+      const nextIdx = (prev.currentTeamIndex + 1) % prev.teams.length;
+
+      return {
+        ...prev,
+        teams: newTeams,
+        houseBalance: newHouseBalance,
+        lastSpinResult: { emojis: resultEmojis, isWin, prize, teamId: currentTeam.id, candyAwarded, candyReturned },
+        currentTeamIndex: nextIdx,
+        phase: 'spin_result'
+      };
+    });
+  };
+
   const endBetsSession = () => {
     setGameState(prev => {
       _saveHistory(prev, prev.teams);
@@ -547,6 +623,7 @@ export function useGame() {
     stealDuelo,
     spinCassino,
     nextCassinoTurn,
+    spinCassinoInstitucional,
     endBetsSession,
     updateTeamScore,
     addHouseBalance,

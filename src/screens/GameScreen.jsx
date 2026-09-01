@@ -18,6 +18,7 @@ import CorridaScreen from './game-modes/CorridaScreen';
 import BombaScreen from './game-modes/BombaScreen';
 import DueloScreen from './game-modes/DueloScreen';
 import CassinoScreen from './game-modes/CassinoScreen';
+import CassinoInstitucionalScreen from './game-modes/CassinoInstitucionalScreen';
 import CrashScreen from './game-modes/CrashScreen';
 import LootboxScreen from './game-modes/LootboxScreen';
 import RoletaScreen from './game-modes/RoletaScreen';
@@ -36,7 +37,7 @@ export default function GameScreen() {
   // questions list (stale localStorage, corrupt data, etc.) show a recovery
   // screen rather than a silent blank page.
   // Bets modes (cassino, crash, lootbox, roleta) don't use questions — skip the check.
-  const BETS_MODES = ['cassino', 'crash', 'lootbox', 'roleta'];
+  const BETS_MODES = ['cassino', 'cassino_inst', 'crash', 'lootbox', 'roleta'];
   const needsQuestion = !BETS_MODES.includes(mode) && mode !== 'bomba';
   const questionExists = questions.some(q => q.id === gameState.currentQuestionId);
   if (needsQuestion && !questionExists) {
@@ -63,6 +64,7 @@ export default function GameScreen() {
   if (mode === 'bomba')      return <BombaScreen key={`${gameState.phase}-${gameState.currentQuestionId}`} />;
   if (mode === 'duelo')      return <DueloScreen key={gameState.currentQuestionId} />;
   if (mode === 'cassino')    return <CassinoScreen key={gameState.currentTeamIndex} />;
+  if (mode === 'cassino_inst') return <CassinoInstitucionalScreen key={gameState.currentTeamIndex} />;
   if (mode === 'crash')      return <CrashScreen key={gameState.currentTeamIndex} />;
   if (mode === 'lootbox')    return <LootboxScreen key={gameState.currentTeamIndex} />;
   if (mode === 'roleta')     return <RoletaScreen key={gameState.currentTeamIndex} />;
