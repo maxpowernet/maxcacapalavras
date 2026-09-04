@@ -78,7 +78,7 @@ export default function CassinoInstitucionalScreen() {
   const showQuizGate = !unlocked && gameState.phase !== 'spin_result';
 
   return (
-    <GameLayout currentTeamIndex={gameState.currentTeamIndex} teams={gameState.teams} rightPanel={<CassinoInstStats />} showFullscreen>
+    <GameLayout currentTeamIndex={gameState.currentTeamIndex} teams={gameState.teams} rightPanel={<CassinoInstStats />}>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, gap: '40px' }}>
         <h1 style={{ fontSize: '3rem', margin: 0, textShadow: '0 0 20px rgba(255,255,255,0.3)' }}>CASSINO INSTITUCIONAL</h1>
 

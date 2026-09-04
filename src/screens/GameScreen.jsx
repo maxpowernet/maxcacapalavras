@@ -10,6 +10,7 @@ import TimerDisplay from '../components/TimerDisplay';
 import WordGrid from '../components/WordGrid';
 import QuizOverlay from '../components/QuizOverlay';
 import PauseOverlay from '../components/PauseOverlay';
+import FullscreenButton from '../components/FullscreenButton';
 
 import QuizTempoScreen from './game-modes/QuizTempoScreen';
 import ForcaScreen from './game-modes/ForcaScreen';
@@ -57,19 +58,22 @@ export default function GameScreen() {
   // so React fully remounts each screen when the question changes. This resets
   // local UI state (selectedIdx, timerActive, etc.) automatically, eliminating
   // the need for synchronous setState calls inside useEffect hooks.
-  if (mode === 'quiz_tempo') return <QuizTempoScreen key={gameState.currentQuestionId} />;
-  if (mode === 'forca')      return <ForcaScreen key={gameState.currentQuestionId} />;
-  if (mode === 'eliminacao') return <EliminacaoScreen key={`${gameState.eliminacaoLevel ?? 0}-${gameState.currentQuestionId}`} />;
-  if (mode === 'corrida')    return <CorridaScreen key={gameState.currentQuestionId} />;
-  if (mode === 'bomba')      return <BombaScreen key={`${gameState.phase}-${gameState.currentQuestionId}`} />;
-  if (mode === 'duelo')      return <DueloScreen key={gameState.currentQuestionId} />;
-  if (mode === 'cassino')    return <CassinoScreen key={gameState.currentTeamIndex} />;
-  if (mode === 'cassino_inst') return <CassinoInstitucionalScreen key={gameState.currentTeamIndex} />;
-  if (mode === 'crash')      return <CrashScreen key={gameState.currentTeamIndex} />;
-  if (mode === 'lootbox')    return <LootboxScreen key={gameState.currentTeamIndex} />;
-  if (mode === 'roleta')     return <RoletaScreen key={gameState.currentTeamIndex} />;
+  let screen;
+  if (mode === 'quiz_tempo') screen = <QuizTempoScreen key={gameState.currentQuestionId} />;
+  else if (mode === 'forca')      screen = <ForcaScreen key={gameState.currentQuestionId} />;
+  else if (mode === 'eliminacao') screen = <EliminacaoScreen key={`${gameState.eliminacaoLevel ?? 0}-${gameState.currentQuestionId}`} />;
+  else if (mode === 'corrida')    screen = <CorridaScreen key={gameState.currentQuestionId} />;
+  else if (mode === 'bomba')      screen = <BombaScreen key={`${gameState.phase}-${gameState.currentQuestionId}`} />;
+  else if (mode === 'duelo')      screen = <DueloScreen key={gameState.currentQuestionId} />;
+  else if (mode === 'cassino')    screen = <CassinoScreen key={gameState.currentTeamIndex} />;
+  else if (mode === 'cassino_inst') screen = <CassinoInstitucionalScreen key={gameState.currentTeamIndex} />;
+  else if (mode === 'crash')      screen = <CrashScreen key={gameState.currentTeamIndex} />;
+  else if (mode === 'lootbox')    screen = <LootboxScreen key={gameState.currentTeamIndex} />;
+  else if (mode === 'roleta')     screen = <RoletaScreen key={gameState.currentTeamIndex} />;
+  // key faltante: sem ela, o QuizOverlay não remonta ao trocar de pergunta após uma resposta errada
+  else screen = <CacaPalavrasScreen key={gameState.currentQuestionId} togglePause={togglePause} />;
 
-  return <CacaPalavrasScreen togglePause={togglePause} />;
+  return <>{screen}<FullscreenButton /></>;
 }
 
 // ─── Modo Caça-Palavras (original) ───────────────────────────────────────────
