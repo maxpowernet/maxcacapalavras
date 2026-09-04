@@ -117,25 +117,37 @@ async function parsePDF(file) {
     allRows.push(...pageRows);
   }
 
-  // 2. Reconstruir perguntas
+  // 2. Extrair gabarito separado (ex.: "Gabarito Oficial" com linhas "Q1: C  Q11: D  Q21: C  Q31: C")
+  const answerMap = new Map();
+  for (const row of allRows) {
+    for (const m of row.text.matchAll(/Q\s*(\d+)\s*:\s*([A-D])\b/gi)) {
+      answerMap.set(parseInt(m[1], 10), m[2].toUpperCase());
+    }
+  }
+
+  // 3. Reconstruir perguntas
   const questions = [];
   let cur = null;
 
   for (const row of allRows) {
     const txt = row.text;
 
-    // Ignorar cabeçalhos/rodapés típicos
+    // Ignorar cabeçalhos/rodapés típicos e a seção de gabarito
     if (
       /^QUIS\s+NR/i.test(txt) ||
       /^Segurança do Trabalho/i.test(txt) ||
-      /^\d+\s*\/\s*\d+$/.test(txt)
+      /^\d+\s*\/\s*\d+$/.test(txt) ||
+      /^Gabarito\s+Oficial/i.test(txt) ||
+      /^Q\s*\d+\s*:\s*[A-D]\b/i.test(txt)
     ) continue;
 
     // Nova questão
-    if (/^Questão\s+\d+/i.test(txt)) {
+    const numMatch = txt.match(/^Questão\s+(\d+)/i);
+    if (numMatch) {
       if (cur) questions.push(cur);
       cur = {
         id: uuidv4(),
+        number: parseInt(numMatch[1], 10),
         q: txt.replace(/^Questão\s+\d+\s*/i, '').trim(),
         options: [],
         correct: -1,
@@ -187,8 +199,20 @@ async function parsePDF(file) {
 
   if (cur) questions.push(cur);
 
-  // 3. Limpar questões sem resposta correta detectada e retornar
-  return questions.filter(q => q.options.length >= 2);
+  // 4. Aplicar gabarito (tem precedência sobre a detecção por negrito)
+  for (const q of questions) {
+    const letter = answerMap.get(q.number);
+    if (!letter) continue;
+    const idx = letter.charCodeAt(0) - 65;
+    if (idx < 0 || idx >= q.options.length) continue;
+    q.correct = idx;
+    q.word = extractKeyword(q.options[idx].replace(/^[A-D]\)\s*/i, ''));
+  }
+
+  // 5. Limpar campos internos, remover questões sem alternativas suficientes e retornar
+  return questions
+    .filter(q => q.options.length >= 2)
+    .map(({ number, ...q }) => q);
 }
 
 /**
