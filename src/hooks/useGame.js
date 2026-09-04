@@ -159,8 +159,9 @@ export function useGame() {
 
   const completeWordSearch = (timeLeft) => {
     setGameState(prev => {
-      let points = timeLeft >= 15 ? prev.scorePerQ : prev.scorePerQ / 2;
-      points = Math.round(points * 10) / 10;
+      const raw = timeLeft >= 15 ? prev.scorePerQ : prev.scorePerQ / 2;
+      // Arredonda para inteiro (evita placares fracionados tipo "1.3") e garante ao menos 1 ponto por acerto
+      const points = Math.max(1, Math.round(raw));
       const newTeams = [...prev.teams];
       newTeams[prev.currentTeamIndex].score += points;
       const isWin = newTeams[prev.currentTeamIndex].score >= prev.winGoal;
