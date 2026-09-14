@@ -23,14 +23,13 @@ import CassinoInstitucionalScreen from './game-modes/CassinoInstitucionalScreen'
 import CrashScreen from './game-modes/CrashScreen';
 import LootboxScreen from './game-modes/LootboxScreen';
 import RoletaScreen from './game-modes/RoletaScreen';
+import ResponderBadge from '../components/ResponderBadge';
 
 const COLORS = ['var(--t1)', 'var(--t2)', 'var(--t3)', 'var(--t4)'];
 
 export default function GameScreen() {
   const { gameState, togglePause, quitGame } = useGame();
   const { questions } = useAppContext();
-
-  if (gameState.paused) return <PauseOverlay />;
 
   const mode = gameState.gameMode || 'cacapalavras';
 
@@ -73,7 +72,13 @@ export default function GameScreen() {
   // key faltante: sem ela, o QuizOverlay não remonta ao trocar de pergunta após uma resposta errada
   else screen = <CacaPalavrasScreen key={gameState.currentQuestionId} togglePause={togglePause} />;
 
-  return <>{screen}<FullscreenButton /></>;
+  return (
+    <>
+      {screen}
+      {gameState.paused && <PauseOverlay />}
+      <FullscreenButton />
+    </>
+  );
 }
 
 // ─── Modo Caça-Palavras (original) ───────────────────────────────────────────
@@ -86,9 +91,14 @@ function CacaPalavrasScreen({ togglePause }) {
   const activeColor = COLORS[gameState.currentTeamIndex % 4];
   const currentQuestion = questions.find(q => q.id === gameState.currentQuestionId);
 
-  const { grid, answerCoords } = useMemo(() => {
-    if (!currentQuestion) return { grid: [], answerCoords: [] };
+  // gridWord e a palavra REALMENTE colocada na grade (normalizada e limitada).
+  // Exibir currentQuestion.word podia pedir uma palavra que nao estava la.
+  const { grid, answerCoords, word: gridWord } = useMemo(() => {
+    if (!currentQuestion) return { grid: [], answerCoords: [], word: "" };
     return generateGrid(currentQuestion.word);
+    // Depende SO da palavra de proposito: incluir currentQuestion faria a
+    // grade ser sorteada de novo a cada mudanca de identidade do objeto.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentQuestion?.word]);
 
   if (!currentQuestion) return null;
@@ -147,11 +157,12 @@ function CacaPalavrasScreen({ togglePause }) {
             </span>
             <h2 style={{ fontSize: '1.8rem', color: '#000' }}>{currentTeam.name}</h2>
           </div>
+          <ResponderBadge />
           {gameState.phase === 'wordsearch' && (
             <div className="glass animate-slide" style={{ padding: '20px', textAlign: 'center', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '20px' }}>
               <h3>Encontre a palavra:</h3>
               <p style={{ fontSize: '2rem', fontWeight: '800', letterSpacing: '4px', color: 'var(--text)', wordBreak: 'break-all' }}>
-                {currentQuestion.word}
+                {gridWord}
               </p>
             </div>
           )}

@@ -9,6 +9,9 @@ export default function BombaScreen() {
   const [selectedIdx, setSelectedIdx] = useState(null);
   const timerRef = useRef(null);
   const startRef = useRef(null);
+  // Este timeout nao era guardado nem cancelado.
+  const answerTimerRef = useRef(null);
+  useEffect(() => () => clearTimeout(answerTimerRef.current), []);
   const [pulse, setPulse] = useState(false);
 
   // Bug 6 fix: removed local `phase` state — it was a mirror of gameState.phase
@@ -48,7 +51,7 @@ export default function BombaScreen() {
     clearTimeout(timerRef.current);
     setSelectedIdx(idx);
     const isCorrect = idx === currentQuestion.correct;
-    setTimeout(() => answerBomba(isCorrect), 1400);
+    answerTimerRef.current = setTimeout(() => answerBomba(isCorrect), 1400);
   };
 
   if (!currentQuestion && gameState.phase !== 'explosion') return null;

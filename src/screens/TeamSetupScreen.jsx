@@ -2,6 +2,7 @@ import { useState } from 'react';
 import BrandLogo from '../components/BrandLogo';
 import { useClasses } from '../hooks/useClasses';
 import { useGames } from '../hooks/useGames';
+import { useDialog } from '../hooks/useDialog';
 
 const GAME_MODES = [
   { id: 'cacapalavras', icon: '🔍', name: 'Caça-Palavras', desc: 'Quiz + encontre a palavra no grid', color: 'var(--t1)' },
@@ -15,6 +16,7 @@ const GAME_MODES = [
 export default function TeamSetupScreen({ onStart, onCancel }) {
   const { classes } = useClasses();
   const { games, getGamesByClass } = useGames();
+  const dialog = useDialog();
 
   // Bug fix: read sessionStorage synchronously in the initializer so we never
   // call setState inside a useEffect (which triggers set-state-in-effect errors).
@@ -27,7 +29,8 @@ export default function TeamSetupScreen({ onStart, onCancel }) {
   const [selectedMode, setSelectedMode] = useState('cacapalavras');
 
   const [teams, setTeams] = useState([
-    { name: '' }, { name: '' }, { name: '' }, { name: '' }
+    { name: '', memberIds: [] }, { name: '', memberIds: [] },
+    { name: '', memberIds: [] }, { name: '', memberIds: [] },
   ]);
 
   // Bug fix: derive availableGames inline instead of syncing it via useEffect.
@@ -35,20 +38,33 @@ export default function TeamSetupScreen({ onStart, onCancel }) {
   // any setState calls, eliminating set-state-in-effect lint errors.
   const availableGames = selectedClassId ? getGamesByClass(selectedClassId) : [];
 
+  const students = classes.find(c => c.id === selectedClassId)?.students || [];
+
   const updateName = (index, value) => {
-    const newTeams = [...teams];
-    newTeams[index].name = value;
-    setTeams(newTeams);
+    // Antes era copia rasa + mutacao do objeto da equipe.
+    setTeams(prev => prev.map((t, i) => (i === index ? { ...t, name: value } : t)));
+  };
+
+  // Cada aluno pertence a no maximo uma equipe; -1 = fora da partida.
+  const teamOfStudent = (studentId) => teams.findIndex(t => t.memberIds.includes(studentId));
+
+  const assignStudent = (studentId, teamIdx) => {
+    setTeams(prev => prev.map((t, i) => {
+      const without = t.memberIds.filter(id => id !== studentId);
+      return { ...t, memberIds: i === teamIdx ? [...without, studentId] : without };
+    }));
   };
 
   const handleStart = () => {
     if (!selectedClassId || !selectedGameId) {
-      alert('Selecione a turma e o jogo antes de iniciar.');
+      dialog.alert('Selecione a turma e o jogo antes de iniciar.');
       return;
     }
-    const validTeams = teams.filter(t => t.name.trim().length > 0);
+    const validTeams = teams
+      .filter(t => t.name.trim().length > 0)
+      .map(t => ({ name: t.name.trim(), memberIds: t.memberIds }));
     if (validTeams.length < 2) {
-      alert('Sao necessarias pelo menos 2 equipes para jogar.');
+      dialog.alert('Sao necessarias pelo menos 2 equipes para jogar.');
       return;
     }
     sessionStorage.setItem('mcp_active_class_id', selectedClassId);
@@ -76,16 +92,16 @@ export default function TeamSetupScreen({ onStart, onCancel }) {
         {/* Turma + Jogo */}
         <div style={{ display: 'flex', gap: '20px' }}>
           <div className="input-wrap" style={{ flex: 1 }}>
-            <label className="input-label">Turma</label>
-            <select value={selectedClassId} onChange={(e) => setSelectedClassId(e.target.value)}
+            <label className="input-label" htmlFor="setup-turma">Turma</label>
+            <select id="setup-turma" value={selectedClassId} onChange={(e) => setSelectedClassId(e.target.value)}
               style={{ padding: '12px', borderRadius: '8px', background: 'rgba(0,0,0,0.3)', color: 'inherit', border: '1px solid var(--panel-b)' }}>
               <option value="">Selecione a turma...</option>
               {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
           <div className="input-wrap" style={{ flex: 1 }}>
-            <label className="input-label">Jogo / Quiz</label>
-            <select value={selectedGameId} onChange={(e) => setSelectedGameId(e.target.value)}
+            <label className="input-label" htmlFor="setup-jogo">Jogo / Quiz</label>
+            <select id="setup-jogo" value={selectedGameId} onChange={(e) => setSelectedGameId(e.target.value)}
               disabled={!selectedClassId}
               style={{ padding: '12px', borderRadius: '8px', background: 'rgba(0,0,0,0.3)', color: 'inherit', border: '1px solid var(--panel-b)', opacity: !selectedClassId ? 0.5 : 1 }}>
               <option value="">Selecione o jogo...</option>
@@ -96,7 +112,7 @@ export default function TeamSetupScreen({ onStart, onCancel }) {
 
         {/* Modo de Jogo */}
         <div>
-          <label className="input-label" style={{ display: 'block', marginBottom: '12px' }}>Modo de Jogo</label>
+          <span className="input-label" style={{ display: 'block', marginBottom: '12px' }}>Modo de Jogo</span>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '10px' }}>
             {GAME_MODES.map(m => {
               const isSelected = selectedMode === m.id;
@@ -129,7 +145,7 @@ export default function TeamSetupScreen({ onStart, onCancel }) {
 
         {/* Equipes */}
         <div style={{ borderTop: '1px solid var(--panel-b)', paddingTop: '20px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
-          <label className="input-label" style={{ marginBottom: '-5px' }}>Equipes</label>
+          <span className="input-label" style={{ marginBottom: '-5px' }}>Equipes</span>
           {teams.map((team, idx) => (
             <div key={idx} style={{ position: 'relative' }}>
               <input
@@ -137,6 +153,7 @@ export default function TeamSetupScreen({ onStart, onCancel }) {
                 value={team.name}
                 onChange={e => updateName(idx, e.target.value)}
                 placeholder={labels[idx]}
+                aria-label={labels[idx]}
                 style={{
                   borderColor: team.name ? colors[idx] : 'var(--panel-b)',
                   boxShadow: team.name ? `0 0 10px ${colors[idx]}40` : 'none',
@@ -156,6 +173,55 @@ export default function TeamSetupScreen({ onStart, onCancel }) {
             </div>
           ))}
         </div>
+
+        {/* Alunos — so aparece quando a turma tem cadastro. Sem isso o jogo
+            continua funcionando normalmente, so sem relatorio individual. */}
+        {students.length > 0 && (
+          <div style={{ borderTop: '1px solid var(--panel-b)', paddingTop: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div>
+              <span className="input-label">Alunos nas equipes</span>
+              <p style={{ fontSize: '0.8rem', color: 'var(--muted)', margin: '4px 0 0' }}>
+                Opcional. Distribua os alunos para gerar o relatorio de desempenho individual.
+              </p>
+            </div>
+
+            <div style={{ display: 'grid', gap: '6px', maxHeight: '260px', overflowY: 'auto', paddingRight: '6px' }}>
+              {students.map(st => {
+                const assigned = teamOfStudent(st.id);
+                return (
+                  <div key={st.id} style={{
+                    display: 'flex', alignItems: 'center', gap: '10px',
+                    background: 'rgba(0,0,0,0.25)', borderRadius: '8px', padding: '8px 12px',
+                  }}>
+                    <span style={{ flex: 1, fontSize: '0.9rem' }}>{st.name}</span>
+                    <div style={{ display: 'flex', gap: '4px' }}>
+                      {teams.map((t, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          disabled={!t.name.trim()}
+                          aria-pressed={assigned === idx}
+                          aria-label={`Colocar ${st.name} na equipe ${idx + 1}`}
+                          onClick={() => assignStudent(st.id, assigned === idx ? -1 : idx)}
+                          style={{
+                            width: '30px', height: '30px', borderRadius: '8px', cursor: t.name.trim() ? 'pointer' : 'not-allowed',
+                            background: assigned === idx ? colors[idx] : 'rgba(255,255,255,0.05)',
+                            border: `1px solid ${assigned === idx ? colors[idx] : 'var(--panel-b)'}`,
+                            color: assigned === idx ? '#000' : 'var(--muted)',
+                            fontWeight: '700', fontSize: '0.8rem',
+                            opacity: t.name.trim() ? 1 : 0.35,
+                          }}
+                        >
+                          {idx + 1}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         <div style={{ display: 'flex', gap: '15px' }}>
           <button className="btn btn-secondary" onClick={onCancel} style={{ flex: 1 }}>Voltar</button>

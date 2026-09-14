@@ -1,0 +1,5 @@
+# O repositorio misturava CRLF e LF entre arquivos.
+* text=auto eol=lf
+*.png binary
+*.pdf binary
+*.zip binary

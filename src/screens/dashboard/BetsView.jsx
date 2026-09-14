@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useBetsOdds } from '../../hooks/useBetsOdds';
+import { useDialog } from '../../hooks/useDialog';
 
 const BET_GAMES = [
   { id: 'cassino', icon: '🎰', name: 'Cassino Educacional', desc: 'Simulador de apostas contra a banca', color: 'var(--t4)' },
@@ -12,19 +13,18 @@ const BET_GAMES = [
 export default function BetsView({ onStartGame }) {
   const [teams, setTeams] = useState([{ name: '' }, { name: '' }, { name: '' }, { name: '' }]);
   const { odds, setOdd } = useBetsOdds();
+  const dialog = useDialog();
   const colors = ['var(--t1)', 'var(--t2)', 'var(--t3)', 'var(--t4)'];
   const labels = ['Equipe 1', 'Equipe 2', 'Equipe 3 (Opcional)', 'Equipe 4 (Opcional)'];
 
   const updateName = (index, value) => {
-    const newTeams = [...teams];
-    newTeams[index].name = value;
-    setTeams(newTeams);
+    setTeams(prev => prev.map((t, i) => (i === index ? { ...t, name: value } : t)));
   };
 
   const handlePlay = (modeId) => {
     const validTeams = teams.filter(t => t.name.trim().length > 0);
     if (validTeams.length < 2) {
-      alert('São necessárias pelo menos 2 equipes para jogar.');
+      dialog.alert('São necessárias pelo menos 2 equipes para jogar.');
       return;
     }
     // Set dummy active game/class to prevent errors in other components

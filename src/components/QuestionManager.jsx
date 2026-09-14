@@ -1,70 +1,152 @@
-import { useState } from 'react';
-import { useQuestions } from '../hooks/useQuestions';
+import { useMemo, useState } from 'react';
+import { sanitizeWord, MAX_WORD_LEN, MIN_WORD_LEN } from '../utils/wordGrid';
+import { findQuestionIssues, countWords } from '../utils/questionValidation';
+import { toJSON, toTXT, downloadText, safeFilename } from '../utils/exportQuestions';
 
-export default function QuestionManager() {
-  const { questions, removeQuestion, clearQuestions } = useQuestions();
-  const [viewMode, setViewMode] = useState(false);
+/**
+ * Lista editavel das perguntas de um jogo.
+ *
+ * Antes este componente nao era usado por ninguem e so exibia as perguntas.
+ * Como as perguntas ficam embutidas no documento do jogo, depois de salvar nao
+ * havia como corrigir uma palavra-chave ruim sem apagar o jogo inteiro.
+ *
+ * Controlado: recebe `questions` e devolve a lista nova em `onChange`.
+ */
+/**
+ * @param {{questions: import('../types.js').Question[],
+ *   onChange: (qs: import('../types.js').Question[]) => void,
+ *   exportName?: string}} props
+ */
+export default function QuestionManager({ questions, onChange, exportName }) {
+  const [open, setOpen] = useState(false);
+
+  const wordCounts = useMemo(() => countWords(questions), [questions]);
+  const issuesById = useMemo(() => {
+    const map = new Map();
+    for (const q of questions) map.set(q.id, findQuestionIssues(q, wordCounts));
+    return map;
+  }, [questions, wordCounts]);
+
+  const pending = [...issuesById.values()].filter((list) => list.length > 0).length;
 
   if (questions.length === 0) return null;
 
+  const update = (id, field, value) => {
+    const clean = field === 'word' ? sanitizeWord(value).slice(0, MAX_WORD_LEN) : value;
+    onChange(questions.map((q) => (q.id === id ? { ...q, [field]: clean } : q)));
+  };
+
+  const remove = (id) => onChange(questions.filter((q) => q.id !== id));
+
   return (
-    <div className="glass animate-fade" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
-          <h2 style={{ fontSize: '1.2rem', marginBottom: '4px' }}>Banco de Perguntas</h2>
-          <p style={{ fontSize: '0.9rem' }}>{questions.length} perguntas cadastradas</p>
-        </div>
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <button className="btn btn-secondary btn-sm" onClick={() => setViewMode(!viewMode)}>
-            {viewMode ? 'Ocultar Detalhes' : 'Ver Perguntas'}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
+        <p style={{ fontSize: '0.9rem', margin: 0, color: pending > 0 ? 'var(--danger)' : 'var(--muted)' }}>
+          {questions.length} perguntas
+          {pending > 0 && ` · ${pending} precisam de atencao`}
+        </p>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            onClick={() => downloadText(safeFilename(exportName, 'txt'), toTXT(questions))}
+            title="Baixa no mesmo formato que o importador aceita de volta"
+          >
+            ⬇ TXT
           </button>
-          <button className="btn btn-danger btn-sm" onClick={() => {
-            if (window.confirm('Tem certeza que deseja apagar TODAS as perguntas?')) {
-              clearQuestions();
-            }
-          }}>
-            Apagar Tudo
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            onClick={() => downloadText(
+              safeFilename(exportName, 'json'), toJSON(questions), 'application/json;charset=utf-8'
+            )}
+          >
+            ⬇ JSON
+          </button>
+          <button type="button" className="btn btn-secondary btn-sm" onClick={() => setOpen(!open)}>
+            {open ? 'Ocultar perguntas' : 'Revisar perguntas'}
           </button>
         </div>
       </div>
 
-      {viewMode && (
-        <div style={{ 
-          display: 'grid', gap: '12px', 
-          maxHeight: '400px', overflowY: 'auto', paddingRight: '10px' 
-        }}>
-          {questions.map((q, idx) => (
-            <div key={q.id} style={{ 
-              background: 'rgba(0,0,0,0.3)', padding: '16px', borderRadius: '8px',
-              border: '1px solid var(--panel-b)', position: 'relative'
-            }}>
-              <button 
-                onClick={() => removeQuestion(q.id)}
+      {open && (
+        <div style={{ display: 'grid', gap: '12px', maxHeight: '420px', overflowY: 'auto', paddingRight: '10px' }}>
+          {questions.map((q, idx) => {
+            const issues = issuesById.get(q.id) || [];
+            return (
+              <div
+                key={q.id}
                 style={{
-                  position: 'absolute', top: '10px', right: '10px',
-                  background: 'none', border: 'none', color: 'var(--danger)',
-                  cursor: 'pointer', fontSize: '1.2rem'
+                  background: 'rgba(0,0,0,0.3)', padding: '16px', borderRadius: '8px',
+                  border: `1px solid ${issues.length ? 'var(--danger)' : 'var(--panel-b)'}`,
+                  position: 'relative',
                 }}
-                title="Excluir"
               >
-                🗑️
-              </button>
-              <div style={{ fontWeight: '700', marginBottom: '8px', paddingRight: '30px' }}>
-                {idx + 1}. {q.q}
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', fontSize: '0.85rem', color: 'var(--muted)' }}>
-                {q.options.map((opt, oIdx) => (
-                  <div key={oIdx} style={{ color: oIdx === q.correct ? 'var(--success)' : 'inherit', fontWeight: oIdx === q.correct ? '600' : 'normal' }}>
-                    {opt}
+                <button
+                  type="button"
+                  onClick={() => remove(q.id)}
+                  aria-label={`Excluir pergunta ${idx + 1}`}
+                  style={{
+                    position: 'absolute', top: '10px', right: '10px', background: 'none',
+                    border: 'none', color: 'var(--danger)', cursor: 'pointer', fontSize: '1.2rem',
+                  }}
+                >
+                  🗑️
+                </button>
+
+                {issues.length > 0 && (
+                  <div style={{ color: 'var(--danger)', fontSize: '0.78rem', marginBottom: '8px', paddingRight: '30px' }}>
+                    {issues.join(' · ')}
                   </div>
-                ))}
+                )}
+
+                <div style={{ fontWeight: '700', marginBottom: '8px', paddingRight: '30px' }}>
+                  {idx + 1}. {q.q}
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.85rem' }}>
+                  {q.options.map((opt, oIdx) => {
+                    const isCorrect = oIdx === q.correct;
+                    return (
+                      <button
+                        type="button"
+                        key={oIdx}
+                        role="radio"
+                        aria-checked={isCorrect}
+                        onClick={() => update(q.id, 'correct', oIdx)}
+                        style={{
+                          textAlign: 'left', font: 'inherit', cursor: 'pointer',
+                          padding: '6px 10px', borderRadius: '6px',
+                          background: isCorrect ? 'rgba(57,255,20,0.12)' : 'transparent',
+                          border: isCorrect ? '1px solid var(--t3)' : '1px solid transparent',
+                          color: isCorrect ? 'var(--success)' : 'var(--muted)',
+                          fontWeight: isCorrect ? '600' : 'normal',
+                        }}
+                      >
+                        {opt}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="input-wrap" style={{ marginTop: '10px' }}>
+                  <label className="input-label" htmlFor={`qm-w-${q.id}`}>
+                    Palavra Escondida{' '}
+                    <span style={{ fontSize: '0.72rem', color: 'var(--muted)', fontWeight: 400 }}>
+                      ({MIN_WORD_LEN} a {MAX_WORD_LEN} letras, sem acento)
+                    </span>
+                  </label>
+                  <input
+                    id={`qm-w-${q.id}`}
+                    type="text"
+                    value={q.word || ''}
+                    maxLength={MAX_WORD_LEN}
+                    onChange={(e) => update(q.id, 'word', e.target.value)}
+                  />
+                </div>
               </div>
-              <div style={{ marginTop: '10px', fontSize: '0.85rem' }}>
-                <span style={{ color: 'var(--t1)', fontWeight: '600' }}>Palavra: </span>
-                {q.word}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

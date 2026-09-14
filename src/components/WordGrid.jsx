@@ -6,6 +6,19 @@ const COLORS = ['#00F2FF', '#FF007A', '#39FF14', '#FFBD33'];
 export default function WordGrid({ grid, answerCoords, activeTeamId, onComplete }) {
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
+  // Os setTimeout abaixo sobreviviam a desmontagem: como GameScreen remonta a
+  // tela a cada pergunta, um onComplete atrasado podia disparar depois que o
+  // componente ja tinha saido.
+  const timersRef = useRef([]);
+  const later = (fn, ms) => {
+    const id = setTimeout(fn, ms);
+    timersRef.current.push(id);
+    return id;
+  };
+  useEffect(() => () => {
+    timersRef.current.forEach(clearTimeout);
+    timersRef.current = [];
+  }, []);
   
   const [isDragging, setIsDragging] = useState(false);
   const [startCell, setStartCell] = useState(null);
@@ -67,7 +80,7 @@ export default function WordGrid({ grid, answerCoords, activeTeamId, onComplete 
 
   // Pointer events
   const getCellFromEvent = (e) => {
-    const el = document.elementFromPoint(e.clientX, e.clientY);
+    const el = /** @type {HTMLElement|null} */ (document.elementFromPoint(e.clientX, e.clientY));
     if (!el || !el.dataset.r) return null;
     return { r: parseInt(el.dataset.r), c: parseInt(el.dataset.c) };
   };
@@ -76,15 +89,15 @@ export default function WordGrid({ grid, answerCoords, activeTeamId, onComplete 
   // Compiler can analyse the reference correctly (const declarations are not
   // hoisted, so referencing them earlier causes a react-hooks/immutability error).
   const triggerError = () => {
-    // Shake effect
-    containerRef.current.classList.add('error-shake');
-    setTimeout(() => {
+    // Shake effect — o guard tambem aqui: a ref pode ja estar solta.
+    if (containerRef.current) containerRef.current.classList.add('error-shake');
+    later(() => {
       if (containerRef.current) containerRef.current.classList.remove('error-shake');
     }, 500);
 
     // Mostra dica e falha
     setShowHint(true);
-    setTimeout(() => onComplete(false), 2000);
+    later(() => onComplete(false), 2000);
   };
 
   useEffect(() => {
@@ -110,7 +123,7 @@ export default function WordGrid({ grid, answerCoords, activeTeamId, onComplete 
           // Sucesso!
           setDrawnLines(prev => [...prev, { start: startCell, end: endCell, color: teamColor }]);
           setFoundCoords(prev => [...prev, ...check.coords]);
-          setTimeout(() => onComplete(true), 800);
+          later(() => onComplete(true), 800);
         } else {
           // Erro
           triggerError();

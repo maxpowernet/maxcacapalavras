@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSound } from '../hooks/useSound';
 
 const COLORS = ['#00F2FF', '#FF007A', '#39FF14', '#FFBD33'];
@@ -6,6 +6,10 @@ const COLORS = ['#00F2FF', '#FF007A', '#39FF14', '#FFBD33'];
 export default function QuizOverlay({ question, activeTeamId, onAnswer }) {
   const { playSound } = useSound();
   const [selectedIdx, setSelectedIdx] = useState(null);
+  // O proprio onAnswer troca a pergunta e remonta este componente, entao o
+  // timer pendente da instancia anterior precisa ser cancelado.
+  const timerRef = useRef(null);
+  useEffect(() => () => clearTimeout(timerRef.current), []);
   const color = COLORS[activeTeamId % 4];
 
   // Extracts RGB from hex to use in rgba
@@ -25,10 +29,10 @@ export default function QuizOverlay({ question, activeTeamId, onAnswer }) {
     
     if (isCorrect) {
       playSound('success');
-      setTimeout(() => onAnswer(true), 1200);
+      timerRef.current = setTimeout(() => onAnswer(true), 1200);
     } else {
       playSound('error');
-      setTimeout(() => onAnswer(false), 2500);
+      timerRef.current = setTimeout(() => onAnswer(false), 2500);
     }
   };
 

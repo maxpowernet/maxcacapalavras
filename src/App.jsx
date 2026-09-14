@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useAppContext } from './context/AppContext';
+import { useDialog } from './hooks/useDialog';
+import ErrorBoundary from './components/ErrorBoundary';
 import { useGame } from './hooks/useGame';
 
 import AuthScreen from './screens/AuthScreen';
@@ -15,7 +17,8 @@ const isMobileDevice = () =>
 
 export default function App() {
   const { user, authLoading, setQuestions, isLightMode, toggleTheme } = useAppContext();
-  const { gameState, startGame } = useGame();
+  const dialog = useDialog();
+  const { gameState, startGame, quitGame } = useGame();
   
   const [showTeamSetup, setShowTeamSetup] = useState(false);
   const isMobile = isMobileDevice();
@@ -133,7 +136,7 @@ export default function App() {
               // together, so the state update hasn't flushed yet at this point).
               const qs = selectedGame?.questions || [];
               if (qs.length === 0) {
-                alert('Este jogo não tem perguntas cadastradas. Adicione perguntas antes de jogar.');
+                dialog.alert('Este jogo não tem perguntas cadastradas. Adicione perguntas antes de jogar.');
                 return;
               }
               setQuestions(qs);
@@ -141,7 +144,7 @@ export default function App() {
               try {
                 startGame(teams, selectedMode || 'cacapalavras', qs);
               } catch (err) {
-                alert(err.message || 'Erro ao iniciar o jogo.');
+                dialog.alert(err.message || 'Erro ao iniciar o jogo.');
               }
             }}
           />
@@ -151,16 +154,18 @@ export default function App() {
     return (
       <>
         {renderTopBar(false)}
+        <ErrorBoundary label="o painel" inline>
         <InstructorDashboard 
           onStartGameClick={() => setShowTeamSetup(true)} 
           onStartBetsGame={(teams, mode) => {
             try {
               startGame(teams, mode, [{ id: 'dummy', word: 'BETS', question: 'BETS' }]);
             } catch (err) {
-              alert(err.message || 'Erro ao iniciar o jogo de Bets.');
+              dialog.alert(err.message || 'Erro ao iniciar o jogo de Bets.');
             }
           }}
         />
+        </ErrorBoundary>
       </>
     );
   }
@@ -170,7 +175,13 @@ export default function App() {
     return (
       <>
         {renderTopBar()}
-        <GameScreen />
+        <ErrorBoundary
+          label="o jogo"
+          resetLabelText="Encerrar e voltar ao painel"
+          onReset={quitGame}
+        >
+          <GameScreen />
+        </ErrorBoundary>
       </>
     );
   }
@@ -180,7 +191,9 @@ export default function App() {
     return (
       <>
         {renderTopBar()}
-        <VictoryScreen />
+        <ErrorBoundary label="a tela de vitória" onReset={quitGame}>
+          <VictoryScreen />
+        </ErrorBoundary>
       </>
     );
   }

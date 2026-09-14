@@ -15,10 +15,14 @@
 6. [Fluxo da Aplicação](#fluxo-da-aplicação)
 7. [Formato das Perguntas](#formato-das-perguntas)
 8. [Sistema de Temas](#sistema-de-temas)
-9. [Persistência de Dados](#persistência-de-dados)
-10. [Funcionalidades Extras](#funcionalidades-extras)
-11. [Painel do Instrutor — Interface](#painel-do-instrutor--interface)
-12. [Bugs Corrigidos](#bugs-corrigidos)
+9. [Alunos e relatório individual](#alunos-e-relatório-individual)
+10. [Banco de perguntas compartilhado](#banco-de-perguntas-compartilhado)
+11. [Funcionamento offline (PWA)](#funcionamento-offline-pwa)
+12. [Testes](#testes)
+13. [Persistência de Dados](#persistência-de-dados)
+14. [Funcionalidades Extras](#funcionalidades-extras)
+15. [Painel do Instrutor — Interface](#painel-do-instrutor--interface)
+16. [Bugs Corrigidos](#bugs-corrigidos)
 
 ---
 
@@ -73,11 +77,37 @@ npm run build
 
 # Lint
 npm run lint
+
+# Checagem de tipos (JSDoc + checkJs, sem TypeScript nos arquivos)
+npm run typecheck
+
+# Testes
+npm test
+npm run test:watch
 ```
 
 ### Requisitos
-- Node.js 18+
-- npm 9+
+- Node.js 22+
+- npm 10+
+
+> O `.npmrc` fixa `legacy-peer-deps=true`: `eslint-plugin-jsx-a11y` e o
+> Testing Library ainda declaram peer do ESLint 9, enquanto o projeto usa a 10.
+> As versões funcionam juntas; sem a flag o `npm ci` falha na instalação.
+
+### Checklist de publicação
+
+Estes passos dependem da sua conta e **não** são executados pelo build:
+
+1. **Publicar as regras do Firestore** — obrigatório. Sem isso o banco continua
+   aberto em produção, independentemente do que está no repositório:
+   ```bash
+   firebase deploy --only firestore:rules
+   ```
+   Para conferir antes: `firebase emulators:start --only firestore`.
+2. **App Check** (recomendado): registre o site em *Firebase Console → App Check
+   → Apps → reCAPTCHA v3* e preencha `VITE_RECAPTCHA_SITE_KEY` no `.env`.
+   Sem a variável o App Check fica desligado e nada quebra.
+3. **Publicar o app**: `npm run build` e suba a pasta `dist/`.
 
 ---
 
@@ -266,7 +296,38 @@ Todos os 7 modos utilizam o **mesmo banco de perguntas**. O instrutor escolhe o 
 
 ## Formato das Perguntas
 
-O sistema aceita upload de arquivos **PDF** ou **TXT** com o seguinte padrão:
+O sistema aceita **PDF**, **TXT** e **CSV**, além de colar texto direto e
+importar de um banco compartilhado por outro instrutor.
+
+### PDF
+
+Não existe um formato único obrigatório. O leitor aceita:
+
+- **Enunciados**: `Questão 1`, `Questao 1`, `Pergunta 1`, `Item 1`, `Q1`, ou
+  numeração solta (`1.`, `1)`, `01 -`).
+- **Alternativas**: `A)`, `A.`, `A -`, `A:` ou `(A)`, de **A até E**.
+- **Resposta correta**, em ordem de precedência:
+  1. uma seção de **gabarito** no fim (`Gabarito`, `Respostas`, `Answer key`)
+     nos formatos `Q1: C`, `1. C`, `1 - C`, `01) A`;
+  2. a alternativa **destacada tipograficamente** (negrito), detectada
+     comparando as fontes usadas nas linhas de alternativa;
+  3. marcadores no texto: `**negrito**`, `(correta)`, `✔`, `(X)`.
+- Cabeçalhos e rodapés que se repetem nas páginas são descartados
+  automaticamente, assim como números de página.
+- Páginas em **duas colunas** são lidas coluna a coluna.
+
+Quando nenhuma dessas pistas existe, a questão entra **sinalizada** na tela de
+revisão para o instrutor marcar a resposta — nunca entra errada em silêncio.
+
+PDFs **digitalizados** (imagem) não têm texto selecionável e são recusados com
+uma mensagem explicando que é preciso passar por OCR antes.
+
+### CSV
+
+Cabeçalho com as colunas `pergunta, a, b, c, d, e, correta, palavra`
+(`e` e `palavra` são opcionais; `correta` aceita a letra ou o número).
+
+### TXT
 
 ```
 Pergunta: Qual é a linguagem de marcação da web?
@@ -294,6 +355,26 @@ Palavra: CSS
 | `Correta:` | Letra da alternativa correta (A, B, C ou D) |
 | `Palavra:` | Palavra-chave usada no caça-palavras e na forca |
 
+### Palavra-chave (caça-palavras e forca)
+
+É gerada automaticamente e pode ser editada na revisão. As regras:
+
+- **4 a 12 letras**, apenas `A–Z`, sem acento e sem cedilha — a forca só tem
+  teclado `A–Z`, então um `Ç` tornaria a rodada impossível de completar.
+- Nunca é cortada no meio de uma palavra.
+- Não se repete entre as perguntas do mesmo jogo.
+- Os candidatos vêm da **pergunta e da resposta correta**: o termo do assunto
+  costuma estar no enunciado ("O que é um **algoritmo**?"), enquanto a resposta
+  traz a definição.
+
+A tela de revisão mostra uma **prévia da grade**, então dá para conferir que a
+palavra realmente aparece no caça-palavras antes de salvar.
+
+### Exportar e reimportar
+
+O banco de um jogo pode ser baixado em **TXT** (mesmo formato que o importador
+aceita de volta) ou **JSON**, servindo de backup e de ponte entre instrutores.
+
 Também é possível adicionar/editar perguntas manualmente pelo editor de texto integrado.
 
 ---
@@ -319,6 +400,71 @@ A aplicação possui dois temas com troca instantânea:
 ```
 
 Todos os componentes de jogo (WordGrid, TimerDisplay, HangmanDisplay, BoardGame) utilizam essas variáveis para funcionar corretamente em ambos os temas.
+
+---
+
+## Alunos e relatório individual
+
+Cada turma pode ter **alunos cadastrados** (botão *👥 Alunos* em Turmas). Eles
+ficam embutidos no documento da turma — turmas são pequenas e assim não é
+preciso uma coleção nova.
+
+Na tela de configurar a partida, os alunos podem ser distribuídos entre as
+equipes. Durante o jogo, cada equipe tem um **respondente da vez**, em rodízio
+entre seus membros e trocável com um clique no painel lateral.
+
+> Por que um respondente e não a equipe inteira: as perguntas são respondidas
+> pela equipe, então creditar o acerto a todos os membros não seria dado real.
+> O rodízio é o que torna o relatório individual honesto.
+
+Ao fim da partida o histórico grava acertos, erros e pontos por aluno, e o
+relatório em PDF ganha uma tabela de desempenho individual.
+
+**Turma sem alunos cadastrados continua funcionando exatamente como antes**,
+com tudo apenas por equipe.
+
+---
+
+## Banco de perguntas compartilhado
+
+Um jogo pode ser publicado como **banco de perguntas** (*📤 Publicar como banco
+de perguntas*), privado ou visível para os outros instrutores. Na criação de um
+jogo, a aba *Banco Compartilhado* lista os bancos próprios e os públicos, e
+importa as perguntas **copiando-as** — editar o jogo depois não altera o banco
+de origem.
+
+As regras do Firestore permitem leitura de um banco publicado por qualquer
+instrutor autenticado; criar, editar e apagar continuam sendo só do dono.
+
+---
+
+## Funcionamento offline (PWA)
+
+A aplicação é instalável e funciona sem rede: o service worker guarda a
+aplicação e o **worker do pdf.js**, então abrir o app e importar um PDF
+continuam funcionando na sala de aula com a internet fora do ar. Dados do
+Firestore usam o cache próprio do SDK.
+
+---
+
+## Testes
+
+```bash
+npm test
+```
+
+| Suíte | O que cobre |
+|---|---|
+| `src/hooks/__tests__/gameReducer.test.js` | turnos, pontuação por modo, vitória, respondente e as regressões já corrigidas |
+| `src/utils/__tests__/pdfQuestions.test.js` | formatos de enunciado, gabarito, destaque, cabeçalhos repetidos |
+| `src/utils/__tests__/realPdfs.test.js` | os dois PDFs reais do repositório, de ponta a ponta |
+| `src/utils/__tests__/keyword.test.js` | qualidade e unicidade das palavras-chave |
+| `src/utils/__tests__/wordGrid.test.js` | a palavra exibida é sempre a que está na grade |
+| `src/utils/__tests__/exportQuestions.test.js` | CSV, exportação e deduplicação |
+| `src/components/__tests__/*.dom.test.jsx` | telas de importação e edição de perguntas |
+
+Testes de lógica rodam em Node; os de componente pedem jsdom pelo docblock
+`@vitest-environment jsdom`.
 
 ---
 

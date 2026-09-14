@@ -33,7 +33,9 @@ export default function BoardGame({ positions, teams, specialSquares = [], total
     }}>
       {squares.map((idx) => {
         const special = specialSquares.find(s => s.index === idx);
-        const teamsHere = teams.filter((_, ti) => positions[ti] === idx);
+        const teamsHere = teams
+          .map((team, ti) => ({ team, ti }))
+          .filter(({ ti }) => positions[ti] === idx);
         const isFinish = idx === totalSquares - 1;
         const isStart = idx === 0;
 
@@ -81,11 +83,10 @@ export default function BoardGame({ positions, teams, specialSquares = [], total
                 position: 'absolute', bottom: '2px',
                 display: 'flex', gap: '1px', flexWrap: 'wrap', justifyContent: 'center',
               }}>
-                {teamsHere.map((_, i) => {
-                  const teamIdx = positions.indexOf(idx, i === 0 ? 0 : positions.indexOf(idx) + 1);
+                {teamsHere.map(({ ti: teamIdx }) => {
                   return (
                     <div
-                      key={i}
+                      key={teamIdx}
                       style={{
                         width: '8px', height: '8px', borderRadius: '50%',
                         background: COLORS[teamIdx % 4],

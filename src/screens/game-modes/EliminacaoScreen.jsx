@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useGame } from '../../hooks/useGame';
 import { useAppContext } from '../../context/AppContext';
 import { GameLayout, HEX_COLORS } from './GameLayout';
@@ -29,26 +29,40 @@ export default function EliminacaoScreen() {
 
   // askTeamTimeLeft initialises to 15 and is only ever used once (the lifeline
   // is consumed after the first activation), so no synchronous reset is needed.
+  const resumeRef = useRef(resumeFromAskTeam);
+  useEffect(() => { resumeRef.current = resumeFromAskTeam; });
+
   useEffect(() => {
     if (phase !== 'ask_team_pause') return;
+    let remaining = 15;
     const t = setInterval(() => {
-      setAskTeamTimeLeft(prev => {
-        if (prev <= 1) { clearInterval(t); resumeFromAskTeam(); return 0; }
-        return prev - 1;
-      });
+      remaining -= 1;
+      setAskTeamTimeLeft(Math.max(0, remaining));
+      if (remaining <= 0) {
+        clearInterval(t);
+        resumeRef.current();
+      }
     }, 1000);
     return () => clearInterval(t);
   }, [phase]);
 
+  // Mesmo padrao do completedRef do caca-palavras: uma resposta por rodada.
+  const answeredRef = useRef(false);
+  const answerTimerRef = useRef(null);
+  useEffect(() => () => clearTimeout(answerTimerRef.current), []);
+
   const handleSelect = (idx) => {
-    if (selectedIdx !== null || phase !== 'quiz') return;
+    if (answeredRef.current || selectedIdx !== null || phase !== 'quiz') return;
+    answeredRef.current = true;
     setSelectedIdx(idx);
     setTimerActive(false);
     const isCorrect = idx === currentQuestion.correct;
-    setTimeout(() => answerEliminacao(isCorrect), 1500);
+    answerTimerRef.current = setTimeout(() => answerEliminacao(isCorrect), 1500);
   };
 
   const handleTimeout = () => {
+    if (answeredRef.current) return;
+    answeredRef.current = true;
     setTimerActive(false);
     answerEliminacao(false);
   };
@@ -142,12 +156,14 @@ export default function EliminacaoScreen() {
         {phase === 'reveal' && (
           <div className="glass animate-fade" style={{ padding: '30px', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div style={{ fontSize: '2rem' }}>✅</div>
-            <h3>Correto! +{POINTS[Math.max(0, level - 1)]} pts</h3>
+            {/* revealEarned/revealAccumulated preservam os valores da rodada:
+                ao completar o ultimo nivel, level e accumulated ja foram zerados. */}
+            <h3>Correto! +{gameState.revealEarned ?? POINTS[Math.max(0, level - 1)]} pts</h3>
             <p style={{ fontSize: '0.9rem', color: 'var(--muted)' }}>
-              Acumulado: <strong style={{ color: activeColor }}>{accumulated} pts</strong>
+              Acumulado: <strong style={{ color: activeColor }}>{gameState.revealAccumulated ?? accumulated} pts</strong>
             </p>
             <button className="btn btn-primary" onClick={nextEliminacaoRound}>
-              {level >= 5 ? 'Próxima Equipe →' : 'Próxima Pergunta →'}
+              {gameState.revealRoundOver ? 'Próxima Equipe →' : 'Próxima Pergunta →'}
             </button>
           </div>
         )}

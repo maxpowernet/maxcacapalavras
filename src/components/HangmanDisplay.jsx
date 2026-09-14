@@ -15,12 +15,17 @@ const PARTS = [
   (ctx, cx, cy, r) => { ctx.beginPath(); ctx.moveTo(cx, cy + r * 1.5); ctx.lineTo(cx + r * 1.2, cy + r * 3); ctx.stroke(); },
 ];
 
+const SIZE = 200;
+const R = 18;
+const CX = SIZE / 2;
+const CY = SIZE / 2 - 10;
+
 export default function HangmanDisplay({ wrongCount, color = '#FF007A' }) {
   const canvasRef = React.useRef(null);
-  const size = 200;
-  const r = 18;
-  const cx = size / 2;
-  const cy = size / 2 - 10;
+  const size = SIZE;
+  const r = R;
+  const cx = CX;
+  const cy = CY;
 
   React.useEffect(() => {
     const canvas = canvasRef.current;
@@ -48,7 +53,7 @@ export default function HangmanDisplay({ wrongCount, color = '#FF007A' }) {
     for (let i = 0; i < Math.min(wrongCount, 6); i++) {
       PARTS[i](ctx, cx, cy, r);
     }
-  }, [wrongCount, color]);
+  }, [wrongCount, color, cx, cy, r, size]);
 
   return (
     <canvas

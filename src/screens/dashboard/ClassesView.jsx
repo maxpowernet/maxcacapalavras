@@ -2,28 +2,56 @@ import { useState } from 'react';
 import { useClasses } from '../../hooks/useClasses';
 import { useGames } from '../../hooks/useGames';
 import BadgesPanel from '../../components/BadgesPanel';
+import StudentsPanel from '../../components/StudentsPanel';
+import { useDialog } from '../../hooks/useDialog';
 
 const COLORS = ['#00F2FF', '#FF007A', '#39FF14', '#FFBD33', '#AA88FF', '#FF6633', '#33CCFF'];
 
 export default function ClassesView() {
   const { classes, addClass, removeClass, updateClass } = useClasses();
   const { getGamesByClass } = useGames();
+  const dialog = useDialog();
   const [newClassName, setNewClassName] = useState('');
   const [editingId, setEditingId] = useState(null);
   const [editName, setEditName] = useState('');
   const [expandedBadgeId, setExpandedBadgeId] = useState(null);
+  const [expandedStudentsId, setExpandedStudentsId] = useState(null);
 
-  const handleAdd = (e) => {
+  const handleAdd = async (e) => {
     e.preventDefault();
-    if (newClassName.trim()) {
-      addClass(newClassName.trim());
+    if (!newClassName.trim()) return;
+    try {
+      await addClass(newClassName.trim());
       setNewClassName('');
+    } catch (err) {
+      console.error('Falha ao criar a turma:', err);
+      dialog.alert('Nao foi possivel criar a turma. Verifique sua conexao e tente novamente.');
     }
   };
 
-  const handleSaveEdit = (id) => {
-    if (editName.trim()) updateClass(id, editName.trim());
-    setEditingId(null);
+  const handleSaveEdit = async (id) => {
+    if (!editName.trim()) { setEditingId(null); return; }
+    try {
+      await updateClass(id, editName.trim());
+      setEditingId(null);
+    } catch (err) {
+      console.error('Falha ao renomear a turma:', err);
+      dialog.alert('Nao foi possivel renomear a turma. Verifique sua conexao e tente novamente.');
+    }
+  };
+
+  const handleRemove = async (c) => {
+    const ok = await dialog.confirm(
+      `Excluir "${c.name}"? Os jogos vinculados ficarão órfãos.`,
+      { danger: true, confirmText: 'Excluir' }
+    );
+    if (!ok) return;
+    try {
+      await removeClass(c.id);
+    } catch (err) {
+      console.error('Falha ao excluir a turma:', err);
+      dialog.alert('Nao foi possivel excluir a turma. Verifique sua conexao e tente novamente.');
+    }
   };
 
   return (
@@ -36,8 +64,8 @@ export default function ClassesView() {
       <div className="glass" style={{ padding: '30px' }}>
         <form onSubmit={handleAdd} style={{ display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
           <div className="input-wrap" style={{ flex: 1 }}>
-            <label className="input-label">Nova Turma</label>
-            <input type="text" placeholder="Ex: 1º Ano A — Matutino" value={newClassName} onChange={e => setNewClassName(e.target.value)} />
+            <label className="input-label" htmlFor="nova-turma">Nova Turma</label>
+            <input id="nova-turma" type="text" placeholder="Ex: 1º Ano A — Matutino" value={newClassName} onChange={e => setNewClassName(e.target.value)} />
           </div>
           <button type="submit" className="btn btn-primary" disabled={!newClassName.trim()}>+ Adicionar</button>
         </form>
@@ -53,6 +81,8 @@ export default function ClassesView() {
             const gamesCount = getGamesByClass(c.id).length;
             const isEditing = editingId === c.id;
             const showBadges = expandedBadgeId === c.id;
+            const showStudents = expandedStudentsId === c.id;
+            const students = c.students || [];
             const color = COLORS[i % COLORS.length];
 
             return (
@@ -74,15 +104,24 @@ export default function ClassesView() {
                       {isEditing ? (
                         <input type="text" value={editName} onChange={e => setEditName(e.target.value)}
                           onKeyDown={e => e.key === 'Enter' && handleSaveEdit(c.id)}
-                          style={{ maxWidth: '300px', marginBottom: '4px' }} autoFocus />
+                          style={{ maxWidth: '300px', marginBottom: '4px' }} />
                       ) : (
                         <h3 style={{ marginBottom: '2px' }}>{c.name}</h3>
                       )}
-                      <div style={{ fontSize: '0.82rem', color: 'var(--muted)' }}>{gamesCount} jogo(s) vinculado(s)</div>
+                      <div style={{ fontSize: '0.82rem', color: 'var(--muted)' }}>
+                        {gamesCount} jogo(s) vinculado(s) · {students.length} aluno(s)
+                      </div>
                     </div>
                   </div>
 
                   <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => setExpandedStudentsId(showStudents ? null : c.id)}
+                      style={{ borderColor: showStudents ? 'var(--t1)' : undefined, color: showStudents ? 'var(--t1)' : undefined }}
+                    >
+                      👥 Alunos
+                    </button>
                     <button
                       className="btn btn-secondary btn-sm"
                       onClick={() => setExpandedBadgeId(showBadges ? null : c.id)}
@@ -98,13 +137,15 @@ export default function ClassesView() {
                     ) : (
                       <>
                         <button className="btn btn-secondary btn-sm" onClick={() => { setEditingId(c.id); setEditName(c.name); }}>Editar</button>
-                        <button className="btn btn-danger btn-sm" onClick={() => {
-                          if (window.confirm(`Excluir "${c.name}"? Os jogos vinculados ficarão órfãos.`)) removeClass(c.id);
-                        }}>Excluir</button>
+                        <button className="btn btn-danger btn-sm" onClick={() => handleRemove(c)}>Excluir</button>
                       </>
                     )}
                   </div>
                 </div>
+
+                {showStudents && (
+                  <StudentsPanel classId={c.id} students={students} color={color} />
+                )}
 
                 {showBadges && (
                   <div style={{ borderTop: '1px solid var(--panel-b)', paddingTop: '16px' }}>

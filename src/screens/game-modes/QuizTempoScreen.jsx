@@ -8,6 +8,8 @@ export default function QuizTempoScreen() {
   const { gameState, buzzTeam, answerQuizTempo, skipQuizTempo } = useGame();
   const { questions } = useAppContext();
   const [timerActive, setTimerActive] = useState(true);
+  const [timerRound, setTimerRound] = useState(0);
+  const restartTimer = () => { setTimerActive(true); setTimerRound(r => r + 1); };
 
   const currentQuestion = questions.find(q => q.id === gameState.currentQuestionId);
   const phase = gameState.phase; // 'question' | 'answering'
@@ -20,19 +22,17 @@ export default function QuizTempoScreen() {
 
   const handleAnswer = (isCorrect) => {
     answerQuizTempo(buzzedIdx, isCorrect);
-    setTimerActive(false);
-    setTimeout(() => setTimerActive(true), 100);
+    restartTimer();
   };
 
   const handleSkip = () => {
     skipQuizTempo();
-    setTimerActive(false);
-    setTimeout(() => setTimerActive(true), 100);
+    restartTimer();
   };
 
   const handleTimeout = () => {
     skipQuizTempo();
-    setTimeout(() => setTimerActive(true), 100);
+    restartTimer();
   };
 
   if (!currentQuestion) return null;
@@ -41,7 +41,7 @@ export default function QuizTempoScreen() {
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}>
       <div className="glass" style={{ padding: '16px', textAlign: 'center' }}>
         <div style={{ fontSize: '0.8rem', color: 'var(--muted)', marginBottom: '8px', letterSpacing: '1px' }}>TEMPO</div>
-        <TimerDisplay active={timerActive} duration={30} onTimeout={handleTimeout} />
+        <TimerDisplay active={timerActive} duration={30} onTimeout={handleTimeout} resetKey={timerRound} />
       </div>
       {phase === 'answering' && buzzedIdx !== null && (
         <div className="glass animate-slide" style={{ padding: '16px', textAlign: 'center' }}>

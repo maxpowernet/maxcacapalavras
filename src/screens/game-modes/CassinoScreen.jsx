@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useGame } from '../../hooks/useGame';
 import { GameLayout } from './GameLayout';
 import { useBetsOdds } from '../../hooks/useBetsOdds';
@@ -33,16 +33,26 @@ export default function CassinoScreen() {
     }, 100);
   };
 
-  useEffect(() => {
-    if (gameState.phase === 'spin_result' && gameState.lastSpinResult) {
-      setSlotReels(gameState.lastSpinResult.emojis);
-    } else if (!spinning) {
-      setSlotReels(['🎰', '🎰', '🎰']);
-    }
-  }, [gameState.phase, gameState.lastSpinResult, spinning]);
+  // slotReels so vale durante a animacao; fora dela os rolos sao derivados do
+  // estado do jogo. Antes isso era sincronizado por um useEffect que chamava
+  // setState no corpo, causando renders em cascata.
+  // No 'spin_result' o turno ja passou para a proxima equipe, mas o painel
+  // mostra o resultado da anterior: exibimos quem realmente girou.
+  const spinnerIndex = gameState.lastSpinResult
+    ? gameState.teams.findIndex((t) => t.id === gameState.lastSpinResult.teamId)
+    : -1;
+  const displayTeamIndex = gameState.phase === 'spin_result' && spinnerIndex >= 0
+    ? spinnerIndex
+    : gameState.currentTeamIndex;
+
+  const displayReels = spinning
+    ? slotReels
+    : (gameState.phase === 'spin_result' && gameState.lastSpinResult
+        ? gameState.lastSpinResult.emojis
+        : ['🎰', '🎰', '🎰']);
 
   return (
-    <GameLayout currentTeamIndex={gameState.currentTeamIndex} teams={gameState.teams} rightPanel={<CassinoStats />}>
+    <GameLayout currentTeamIndex={displayTeamIndex} teams={gameState.teams} rightPanel={<CassinoStats />}>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, gap: '40px' }}>
         <h1 style={{ fontSize: '3rem', margin: 0, textShadow: '0 0 20px rgba(255,255,255,0.3)' }}>CASSINO EDUCACIONAL</h1>
 
@@ -61,7 +71,7 @@ export default function CassinoScreen() {
           background: 'rgba(0,0,0,0.6)', border: '4px solid var(--t4)',
           boxShadow: '0 0 40px var(--t4)40'
         }}>
-          {slotReels.map((emoji, i) => (
+          {displayReels.map((emoji, i) => (
             <div key={i} style={{
               width: '120px', height: '140px', display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: '5rem', background: '#fff', borderRadius: '15px', color: '#000',
@@ -99,7 +109,15 @@ export default function CassinoScreen() {
         )}
 
         {!canSpin && gameState.phase !== 'spin_result' && (
-           <p style={{ color: 'var(--t2)', fontSize: '1.2rem', fontWeight: 'bold' }}>Saldo insuficiente para apostar!</p>
+           <div style={{ textAlign: 'center' }}>
+             <p style={{ color: 'var(--t2)', fontSize: '1.2rem', fontWeight: 'bold' }}>Saldo insuficiente para apostar!</p>
+             <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginTop: '10px' }}>
+               <button className="btn btn-secondary" style={{ fontSize: '1.2rem', padding: '15px 40px' }} onClick={nextCassinoTurn}>
+                 Próxima Equipe →
+               </button>
+               <button className="btn btn-secondary btn-sm" onClick={endBetsSession} style={{ opacity: 0.7 }}>🏁 Encerrar</button>
+             </div>
+           </div>
         )}
       </div>
     </GameLayout>

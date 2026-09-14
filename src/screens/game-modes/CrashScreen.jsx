@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useGame } from '../../hooks/useGame';
 import { GameLayout } from './GameLayout';
 import { useBetsOdds } from '../../hooks/useBetsOdds';
@@ -129,8 +129,9 @@ export default function CrashScreen() {
 
             {/* Input de aposta + botão principal */}
             <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-              <label style={{ fontSize: '1.2rem' }}>Aposta:</label>
+              <label style={{ fontSize: '1.2rem' }} htmlFor="crash-aposta">Aposta:</label>
               <input
+                id="crash-aposta"
                 type="number"
                 value={betAmountStr}
                 min={MIN_BET}

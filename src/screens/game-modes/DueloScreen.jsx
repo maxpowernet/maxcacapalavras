@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useGame } from '../../hooks/useGame';
 import { useAppContext } from '../../context/AppContext';
 import { GameLayout, COLORS, HEX_COLORS } from './GameLayout';
@@ -15,11 +15,17 @@ export default function DueloScreen() {
   const buzzedIdx = gameState.duelBuzzedTeam;
   const stealFromTeam = gameState.stealFromTeam;
 
+  // As duplas sao guardadas como { a, b } porque o Firestore nao aceita array
+  // aninhado. O formato antigo (array) ainda e aceito para estados ja salvos.
+  const pairAt = (pairs, idx) => {
+    const pair = (pairs || [])[idx];
+    if (!pair) return [0, 1];
+    return Array.isArray(pair) ? pair : [pair.a, pair.b];
+  };
+
   // Determine which team can steal (the other team in the pair)
   const getStealTeamIdx = () => {
-    const pairs = gameState.dueloPairs || [[0, 1]];
-    const pairIdx = gameState.currentDuelPairIdx || 0;
-    const pair = pairs[pairIdx] || [0, 1];
+    const pair = pairAt(gameState.dueloPairs, gameState.currentDuelPairIdx || 0);
     return pair.find(i => i !== stealFromTeam) ?? (stealFromTeam === 0 ? 1 : 0);
   };
 
@@ -33,7 +39,15 @@ export default function DueloScreen() {
     buzzDuelo(teamIdx);
   };
 
+  // handleAnswer nao tinha guarda: o onTimeout do cronometro disparava
+  // handleAnswer(false) junto com o clique manual, resolvendo duas vezes.
+  const answeredRef = useRef(false);
+  const stealTimerRef = useRef(null);
+  useEffect(() => () => clearTimeout(stealTimerRef.current), []);
+
   const handleAnswer = (isCorrect) => {
+    if (answeredRef.current || buzzedIdx === null) return;
+    answeredRef.current = true;
     answerDuelo(buzzedIdx, isCorrect);
   };
 
@@ -41,7 +55,7 @@ export default function DueloScreen() {
     if (stealAnswered) return;
     setStealAnswered(true);
     setStealSelected(isCorrect ? 'correct' : 'wrong');
-    setTimeout(() => stealDuelo(stealTeamIdx, isCorrect), 1400);
+    stealTimerRef.current = setTimeout(() => stealDuelo(stealTeamIdx, isCorrect), 1400);
   };
 
   if (!currentQuestion) return null;
@@ -81,9 +95,7 @@ export default function DueloScreen() {
   );
 
   // Determina os dois times do duelo atual
-  const pairs = gameState.dueloPairs || [[0, 1]];
-  const pairIdx = gameState.currentDuelPairIdx || 0;
-  const currentPair = pairs[pairIdx] || [0, 1];
+  const currentPair = pairAt(gameState.dueloPairs, gameState.currentDuelPairIdx || 0);
 
   return (
     <GameLayout currentTeamIndex={gameState.currentTeamIndex} teams={gameState.teams} rightPanel={rightPanel}>

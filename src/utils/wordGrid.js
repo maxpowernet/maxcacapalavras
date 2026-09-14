@@ -1,11 +1,46 @@
 export const GRID_SIZE = 14;
 
-// Retorna uma matriz [GRID_SIZE][GRID_SIZE] e as coordenadas onde a palavra foi inserida
-export function generateGrid(word) {
+// Limites da palavra escondida. MAX_WORD_LEN fica abaixo de GRID_SIZE para que
+// a palavra caiba na grade com alguma folga de posicionamento; e' a fonte unica
+// da verdade usada tambem pelo extrator de palavras-chave e pela validacao da UI.
+export const MAX_WORD_LEN = 12;
+export const MIN_WORD_LEN = 4;
+
+/**
+ * Normaliza uma palavra para o formato que a grade e a Forca conseguem jogar:
+ * maiusculas, sem acentos, sem espacos e apenas A-Z0-9.
+ * A Forca so tem teclado A-Z, entao um "C" cedilhado tornaria a rodada
+ * impossivel de completar.
+ */
+/**
+ * @param {unknown} raw
+ * @returns {string}
+ */
+export function sanitizeWord(raw) {
+  return String(raw ?? '')
+    .toUpperCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^A-Z0-9]/g, '');
+}
+
+/**
+ * Retorna { grid, answerCoords, word }.
+ *
+ * `word` e' a palavra REALMENTE colocada na grade (ja normalizada e limitada ao
+ * tamanho da grade) — a tela deve exibir este valor, e nao o original, para que
+ * nunca se peca ao jogador uma palavra que nao esta la.
+ */
+/**
+ * @param {string} rawWord
+ * @returns {{ grid: string[][], answerCoords: {r:number,c:number,letter:string}[], word: string }}
+ */
+export function generateGrid(rawWord) {
   const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   const grid = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(''));
-  let placed = false;
-  let attempts = 0;
+  const word = sanitizeWord(rawWord).slice(0, GRID_SIZE);
+  const len = word.length;
+
   let answerCoords = [];
 
   const directions = [
@@ -13,52 +48,44 @@ export function generateGrid(word) {
     { dr: 1, dc: 0 }   // Vertical Baixo (T -> B)
   ];
 
-  const wordUpper = word.toUpperCase().replace(/\s/g, '');
-  const len = wordUpper.length;
+  if (len > 0) {
+    let placed = false;
+    let attempts = 0;
 
-  // Place word
-  while (!placed && attempts < 100) {
-    attempts++;
-    const dir = directions[Math.floor(Math.random() * directions.length)];
-    const startR = Math.floor(Math.random() * GRID_SIZE);
-    const startC = Math.floor(Math.random() * GRID_SIZE);
-    
-    let canPlace = true;
-    let coords = [];
-    
-    for (let i = 0; i < len; i++) {
-      const tr = startR + dir.dr * i;
-      const tc = startC + dir.dc * i;
-      if (tr < 0 || tr >= GRID_SIZE || tc < 0 || tc >= GRID_SIZE) {
-        canPlace = false;
-        break;
+    while (!placed && attempts < 200) {
+      attempts++;
+      const dir = directions[Math.floor(Math.random() * directions.length)];
+      // Sorteia apenas posicoes onde a palavra inteira cabe.
+      const maxR = GRID_SIZE - (dir.dr * (len - 1));
+      const maxC = GRID_SIZE - (dir.dc * (len - 1));
+      const startR = Math.floor(Math.random() * maxR);
+      const startC = Math.floor(Math.random() * maxC);
+
+      const coords = [];
+      for (let i = 0; i < len; i++) {
+        coords.push({ r: startR + dir.dr * i, c: startC + dir.dc * i, letter: word[i] });
       }
-      if (grid[tr][tc] !== '' && grid[tr][tc] !== wordUpper[i]) {
-        canPlace = false;
-        break;
-      }
-      coords.push({ r: tr, c: tc, letter: wordUpper[i] });
-    }
-    
-    if (canPlace) {
+
       answerCoords = coords;
       for (let i = 0; i < len; i++) {
         grid[coords[i].r][coords[i].c] = coords[i].letter;
       }
       placed = true;
     }
+
+    // Fallback defensivo: coloca na linha 0 a partir da coluna 0.
+    // `word` ja foi limitada a GRID_SIZE, entao cabe por completo e
+    // answerCoords sempre cobre a palavra inteira.
+    if (!placed) {
+      answerCoords = [];
+      for (let i = 0; i < len; i++) {
+        grid[0][i] = word[i];
+        answerCoords.push({ r: 0, c: i, letter: word[i] });
+      }
+    }
   }
 
-  // Se não conseguiu, coloca forçado (fallback)
-  if (!placed) {
-     answerCoords = [];
-     for(let i=0; i < Math.min(len, GRID_SIZE); i++) {
-         grid[0][i] = wordUpper[i];
-         answerCoords.push({r: 0, c: i, letter: wordUpper[i]});
-     }
-  }
-
-  // Fill random
+  // Preenche o resto com letras aleatorias
   for (let r = 0; r < GRID_SIZE; r++) {
     for (let c = 0; c < GRID_SIZE; c++) {
       if (grid[r][c] === '') {
@@ -67,11 +94,17 @@ export function generateGrid(word) {
     }
   }
 
-  return { grid, answerCoords };
+  return { grid, answerCoords, word };
 }
 
-// Verifica se a seleção bate com a resposta
+// Verifica se a selecao bate com a resposta
 export function validateSelection(startCoord, endCoord, answerCoords) {
+  // Palavra vazia/invalida: nenhuma selecao pode ser valida, entao nao deixamos
+  // a rodada virar um beco sem saida silencioso.
+  if (!answerCoords || answerCoords.length === 0) {
+    return { valid: false, coords: [] };
+  }
+
   const r1 = startCoord.r;
   const c1 = startCoord.c;
   const r2 = endCoord.r;
@@ -99,7 +132,7 @@ export function validateSelection(startCoord, endCoord, answerCoords) {
       coord.r === answerCoords[answerCoords.length - 1 - idx].r &&
       coord.c === answerCoords[answerCoords.length - 1 - idx].c
     );
-    
+
     if (forward || backward) {
         return { valid: true, coords: selectedCoords };
     }

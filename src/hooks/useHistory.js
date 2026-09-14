@@ -1,6 +1,7 @@
 import { useAppContext } from '../context/AppContext';
 import { db } from '../firebase';
-import { doc, setDoc, writeBatch, query, collection, where, getDocs } from 'firebase/firestore';
+import { doc, setDoc, query, collection, where, getDocs } from 'firebase/firestore';
+import { runBatched } from '../utils/firestoreBatch';
 import { v4 as uuidv4 } from 'uuid';
 
 export function useHistory() {
@@ -22,11 +23,7 @@ export function useHistory() {
     if (!user) throw new Error("Usuário não autenticado.");
     const q = query(collection(db, 'history'), where('createdBy', '==', user.userId));
     const querySnapshot = await getDocs(q);
-    const batch = writeBatch(db);
-    querySnapshot.forEach((docSnap) => {
-      batch.delete(docSnap.ref);
-    });
-    await batch.commit();
+    await runBatched(db, querySnapshot.docs, (batch, docSnap) => batch.delete(docSnap.ref));
   };
 
   return { history, addHistoryRecord, clearHistory };
