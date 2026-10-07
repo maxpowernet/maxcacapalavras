@@ -5,7 +5,7 @@ import {
   createUserWithEmailAndPassword, 
   signOut 
 } from 'firebase/auth';
-import { doc, setDoc, getDocs, collection, query, limit } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 
 export function useAuth() {
   const { user, setUser } = useAppContext();
@@ -33,10 +33,13 @@ export function useAuth() {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const firebaseUser = userCredential.user;
 
-      // 2. Agora autenticado, verifica se é o primeiro usuário (vira instrutor)
-      const usersQuery = query(collection(db, 'users'), limit(1));
-      const usersSnap = await getDocs(usersQuery);
-      const role = usersSnap.empty ? 'instructor' : 'student';
+      // 2. Todo usuário cadastrado é instrutor.
+      // A checagem anterior ("primeiro usuário vira instrutor") lia a coleção
+      // inteira de users: era uma corrida entre dois cadastros simultâneos,
+      // era forjável pelo cliente e agora seria barrada pelas regras do
+      // Firestore. Como App.jsx encaminha todo usuário autenticado para o
+      // InstructorDashboard, este já era o comportamento efetivo.
+      const role = 'instructor';
 
       // 3. Salva o perfil no Firestore
       const profile = {
@@ -52,7 +55,7 @@ export function useAuth() {
       return profile;
     } catch (err) {
       console.error(err);
-      throw new Error(getFriendlyErrorMessage(err.code) || err.message);
+      throw new Error(getFriendlyErrorMessage(err.code) || err.message, { cause: err });
     }
   };
 
@@ -63,7 +66,7 @@ export function useAuth() {
       return true;
     } catch (err) {
       console.error(err);
-      throw new Error(getFriendlyErrorMessage(err.code) || err.message);
+      throw new Error(getFriendlyErrorMessage(err.code) || err.message, { cause: err });
     }
   };
 
@@ -73,7 +76,7 @@ export function useAuth() {
       return userCredential.user;
     } catch (err) {
       console.error(err);
-      throw new Error(getFriendlyErrorMessage(err.code) || err.message);
+      throw new Error(getFriendlyErrorMessage(err.code) || err.message, { cause: err });
     }
   };
 

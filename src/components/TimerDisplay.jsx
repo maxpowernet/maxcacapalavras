@@ -4,8 +4,22 @@ import { useEffect, useState, useRef } from 'react';
 // useEffect dependency array. Without this, an inline arrow onTimeout creates
 // a new function reference on every render (e.g. every hover cell in WordGrid),
 // causing the effect to re-run and reset the timer countdown to 0 each time.
-export default function TimerDisplay({ duration, onTimeout, active, onTick }) {
+/**
+ * @param {{duration: number, active: boolean, onTimeout?: () => void,
+ *   onTick?: (n: number) => void, resetKey?: unknown}} props
+ */
+export default function TimerDisplay({ duration, onTimeout, active, onTick, resetKey }) {
   const [timeLeft, setTimeLeft] = useState(duration);
+
+  // Reinicio de verdade: antes o unico jeito de zerar era remontar o
+  // componente. Desligar e religar "active" so retomava a contagem do valor
+  // que sobrou. Ajuste de estado durante o render (padrao da propria doc do
+  // React) — nao e efeito, entao nao dispara render em cascata.
+  const [prevResetKey, setPrevResetKey] = useState(resetKey);
+  if (resetKey !== prevResetKey) {
+    setPrevResetKey(resetKey);
+    setTimeLeft(duration);
+  }
   const onTimeoutRef = useRef(onTimeout);
   const onTickRef    = useRef(onTick);
 

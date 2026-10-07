@@ -2,6 +2,7 @@ import { useGame } from '../../hooks/useGame';
 import { useAppContext } from '../../context/AppContext';
 import { GameLayout, HEX_COLORS } from './GameLayout';
 import HangmanDisplay from '../../components/HangmanDisplay';
+import { sanitizeWord } from '../../utils/wordGrid';
 import QuizOverlay from '../../components/QuizOverlay';
 
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
@@ -18,7 +19,9 @@ export default function ForcaScreen() {
 
   if (!currentQuestion) return null;
 
-  const word = currentQuestion.word.toUpperCase();
+  // sanitizeWord evita o TypeError quando a pergunta nao tem palavra e
+  // garante que so restem letras A-Z, as unicas que o teclado da Forca oferece.
+  const word = sanitizeWord(currentQuestion.word);
   const revealed = word.split('').map(l => (guessed.includes(l) ? l : '_'));
 
   const rightPanel = (

@@ -1,8 +1,71 @@
 rules_version = '2';
+
+// Antes este arquivo liberava tudo (allow read, write: if true), o que deixava
+// usuarios, turmas, jogos e historico legiveis e gravaveis por qualquer pessoa
+// que extraisse o project id do bundle. O isolamento por createdBy existia
+// apenas no cliente.
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    // O dono do documento nao pode ser trocado numa atualizacao.
+    function ownsExisting() {
+      return signedIn() && resource.data.createdBy == request.auth.uid;
+    }
+
+    function ownsIncoming() {
+      return signedIn() && request.resource.data.createdBy == request.auth.uid;
+    }
+
+    // Perfil: cada usuario le e escreve apenas o proprio documento.
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+
+      // Estado da partida em andamento
+      match /state/{docId} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+
+    // Conteudo do instrutor. Todas as consultas do app ja filtram por
+    // where('createdBy', '==', uid), entao continuam funcionando.
+    match /classes/{docId} {
+      allow read, delete: if ownsExisting();
+      allow create: if ownsIncoming();
+      allow update: if ownsExisting() && ownsIncoming();
+    }
+
+    match /games/{docId} {
+      allow read, delete: if ownsExisting();
+      allow create: if ownsIncoming();
+      allow update: if ownsExisting() && ownsIncoming();
+    }
+
+    match /history/{docId} {
+      allow read, delete: if ownsExisting();
+      allow create: if ownsIncoming();
+      allow update: if ownsExisting() && ownsIncoming();
+    }
+
+    // Bancos de perguntas: qualquer instrutor autenticado le um banco
+    // publicado; criar, editar e apagar continuam sendo so do dono.
+    match /questionBanks/{docId} {
+      allow read: if signedIn() && (resource.data.isPublic == true || resource.data.ownerId == request.auth.uid);
+      allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid;
+      allow update, delete: if signedIn() && resource.data.ownerId == request.auth.uid
+                            && request.resource.data.ownerId == request.auth.uid;
+    }
+
+    // Nada mais e acessivel.
     match /{document=**} {
-      allow read, write: if true;
+      allow read, write: if false;
     }
   }
 }

@@ -19,19 +19,25 @@ const BrandLogo = ({ interactive = false, onClick = null, small = false }) => {
   const cycle = [c1, c2, c3, c4];
   const renderWord = (word) => word.split('').map((ch, i) => <span key={i} style={cycle[i % cycle.length]}>{ch}</span>);
 
+  const Tag = interactive ? 'button' : 'div';
+
   return (
-    <div 
+    <Tag
+      type={interactive ? 'button' : undefined}
       style={{
         display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center',
         padding: '16px', borderRadius: '12px',
         background: interactive ? 'rgba(0,242,255,0.05)' : 'transparent',
         border: interactive ? '1px solid rgba(0,242,255,0.2)' : 'none',
         cursor: interactive ? 'pointer' : 'default',
-        transition: 'all 0.3s ease'
+        transition: 'all 0.3s ease',
+        font: 'inherit',
+        color: 'inherit',
       }}
       onClick={onClick}
       className={interactive ? 'brand-interactive' : ''}
       title={interactive ? 'Voltar' : ''}
+      aria-label={interactive ? 'Pausar / voltar' : undefined}
     >
       {/* MAX - JOGOS */}
       <div style={{ display: 'flex', gap: small ? '2px' : '4px' }}>
@@ -44,7 +50,7 @@ const BrandLogo = ({ interactive = false, onClick = null, small = false }) => {
       <div style={{ display: 'flex', gap: small ? '2px' : '4px' }}>
         {renderWord('INTERATIVOS')}
       </div>
-    </div>
+    </Tag>
   );
 };
 

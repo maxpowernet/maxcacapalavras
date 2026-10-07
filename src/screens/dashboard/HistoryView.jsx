@@ -4,6 +4,7 @@ import { useGames } from '../../hooks/useGames';
 import { useClasses } from '../../hooks/useClasses';
 import PrintReport from '../../components/PrintReport';
 import { useBetsOdds } from '../../hooks/useBetsOdds';
+import { useDialog } from '../../hooks/useDialog';
 
 const MODE_LABELS = {
   cacapalavras: '🔍 Caça-Palavras',
@@ -41,6 +42,7 @@ const MEDALS = ['🥇', '🥈', '🥉'];
 
 export default function HistoryView() {
   const { history, clearHistory } = useHistory();
+  const dialog = useDialog();
   const { games } = useGames();
   const { classes } = useClasses();
   const { odds, setOdd } = useBetsOdds();
@@ -70,8 +72,17 @@ export default function HistoryView() {
           <p>Ranking e detalhes de todas as partidas finalizadas.</p>
         </div>
         {history.length > 0 && (
-          <button className="btn btn-danger btn-sm" onClick={() => {
-            if (window.confirm('Apagar todo o histórico? Esta ação não pode ser desfeita.')) clearHistory();
+          <button className="btn btn-danger btn-sm" onClick={async () => {
+            const ok = await dialog.confirm('Apagar todo o histórico? Esta ação não pode ser desfeita.', {
+              danger: true, confirmText: 'Apagar tudo',
+            });
+            if (!ok) return;
+            try {
+              await clearHistory();
+            } catch (err) {
+      console.error('Falha ao apagar o histórico:', err);
+      dialog.alert('Nao foi possivel apagar o histórico. Verifique sua conexao e tente novamente.');
+            }
           }}>🗑️ Limpar Histórico</button>
         )}
       </div>
@@ -203,6 +214,34 @@ export default function HistoryView() {
                       ))}
                     </div>
                   </div>
+
+                  {/* Desempenho individual — só existe quando a turma tinha
+                      alunos distribuídos nas equipes. */}
+                  {h.perStudent?.length > 0 && (
+                    <details>
+                      <summary style={{ cursor: 'pointer', fontSize: '0.85rem', fontWeight: '700', color: 'var(--muted)' }}>
+                        DESEMPENHO POR ALUNO ({h.perStudent.length})
+                      </summary>
+                      <div style={{ display: 'grid', gap: '6px', marginTop: '10px' }}>
+                        {[...h.perStudent]
+                          .sort((a, b) => (b.points - a.points) || (b.correct - a.correct))
+                          .map((s) => (
+                            <div key={s.studentId} style={{
+                              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                              padding: '8px 14px', borderRadius: '6px', background: 'rgba(0,0,0,0.2)',
+                              fontSize: '0.85rem',
+                            }}>
+                              <span>{s.name}</span>
+                              <span style={{ display: 'flex', gap: '14px', color: 'var(--muted)' }}>
+                                <span style={{ color: 'var(--t3)' }}>{s.correct} acerto(s)</span>
+                                <span style={{ color: 'var(--danger)' }}>{s.wrong} erro(s)</span>
+                                <strong style={{ color: 'var(--text)' }}>{s.points} pts</strong>
+                              </span>
+                            </div>
+                          ))}
+                      </div>
+                    </details>
+                  )}
                 </div>
               );
             })}

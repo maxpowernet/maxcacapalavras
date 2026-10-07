@@ -1,7 +1,15 @@
-import React, { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useGame } from '../../hooks/useGame';
 import { GameLayout } from './GameLayout';
 import { useBetsOdds } from '../../hooks/useBetsOdds';
+
+// Agenda timeouts e cancela os pendentes ao desmontar. Antes, um payout ou
+// liquidacao atrasada podia rodar depois de a tela ja ter saido.
+function useTimeouts() {
+  const ids = useRef([]);
+  useEffect(() => () => { ids.current.forEach(clearTimeout); ids.current = []; }, []);
+  return (fn, ms) => { ids.current.push(setTimeout(fn, ms)); };
+}
 
 // 17 segments: index 0 = green, odd indices = red, even non-zero = black
 const SEGS = 17;
@@ -24,6 +32,7 @@ const COLOR_SEG_MAP = {
 
 export default function RoletaScreen() {
   const { gameState, updateTeamScore, addHouseBalance, nextTurn, endBetsSession } = useGame();
+  const later = useTimeouts();
   const { odds } = useBetsOdds();
 
   const [betAmount, setBetAmount] = useState(100);
@@ -66,7 +75,7 @@ export default function RoletaScreen() {
     setTransitioning(true);
     setWheelRotation(newRotation);
 
-    setTimeout(() => {
+    later(() => {
       setResultColor(color);
       setSpinning(false);
       setTransitioning(false);
@@ -156,8 +165,8 @@ export default function RoletaScreen() {
               >PRETO</button>
             </div>
             <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
-              <label>Aposta:</label>
-              <input type="number" value={betAmount} onChange={e => setBetAmount(Math.max(10, Number(e.target.value)))}
+              <label htmlFor="roleta-aposta">Aposta:</label>
+              <input id="roleta-aposta" type="number" value={betAmount} onChange={e => setBetAmount(Math.max(10, Number(e.target.value)))}
                 style={{ padding: '10px', fontSize: '1.2rem', width: '120px', borderRadius: '10px', textAlign: 'center' }} />
             </div>
             <button

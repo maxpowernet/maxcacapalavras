@@ -1,10 +1,18 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useGame } from '../hooks/useGame';
 import BrandLogo from './BrandLogo';
 
 export default function PauseOverlay() {
   const { togglePause, quitGame } = useGame();
   const [confirming, setConfirming] = useState(false);
+
+  // Dialogo de verdade: Escape fecha e o foco nao fica preso numa div clicavel.
+  useEffect(() => {
+    if (!confirming) return;
+    const onKey = (e) => { if (e.key === 'Escape') setConfirming(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [confirming]);
 
   return (
     <div style={{
@@ -37,7 +45,8 @@ export default function PauseOverlay() {
       {/* ── Modal de confirmação de encerramento ─────────────────────────── */}
       {confirming && (
         <div
-          onClick={() => setConfirming(false)}
+          role="presentation"
+          onClick={(e) => { if (e.target === e.currentTarget) setConfirming(false); }}
           style={{
             position: 'fixed', inset: 0, zIndex: 9100,
             background: 'rgba(0,0,0,0.75)',
@@ -46,7 +55,9 @@ export default function PauseOverlay() {
           }}
         >
           <div
-            onClick={e => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="pause-confirm-title"
             style={{
               background: 'linear-gradient(135deg, rgba(18,18,30,0.98) 0%, rgba(30,10,20,0.98) 100%)',
               border: '1px solid rgba(255,51,85,0.35)',
@@ -74,10 +85,13 @@ export default function PauseOverlay() {
             </div>
 
             {/* Título */}
-            <h2 style={{
-              margin: 0, fontSize: '1.55rem', fontWeight: 800,
-              color: '#fff', textAlign: 'center', letterSpacing: '1px',
-            }}>
+            <h2
+              id="pause-confirm-title"
+              style={{
+                margin: 0, fontSize: '1.55rem', fontWeight: 800,
+                color: '#fff', textAlign: 'center', letterSpacing: '1px',
+              }}
+            >
               Encerrar o jogo?
             </h2>
 

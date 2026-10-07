@@ -1,41 +1,39 @@
 import { useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
+import { assignKeywords } from '../utils/keyword';
+import { sanitizeWord, MAX_WORD_LEN, MIN_WORD_LEN } from '../utils/wordGrid';
+import { useDialog } from '../hooks/useDialog';
 
 export default function QuestionTextParser({ onQuestionsParsed }) {
+  const dialog = useDialog();
   const [rawText, setRawText] = useState('');
   const [parsedCards, setParsedCards] = useState([]);
-  const [isProcessing, setIsProcessing] = useState(false);
 
   // Parse bruto separando blocos por linha em branco
   const handleProcessText = () => {
-    setIsProcessing(true);
-    
-    // Tenta quebrar por blocos (linhas em branco)
     const blocks = rawText.split(/\n\s*\n/).filter(b => b.trim().length > 0);
-    
-    const newCards = blocks.map(block => {
+
+    const draft = blocks.map(block => {
       const lines = block.split('\n').map(l => l.trim()).filter(l => l.length > 0);
       let q = lines[0] || '';
-      let options = lines.slice(1);
-      
+      const options = lines.slice(1);
+
       // Limpeza se tiver "Pergunta:" ou "1." na frente
       q = q.replace(/^(pergunta|q|question|\d+)\s*[:.-]?\s*/i, '');
-      
-      return {
-        id: uuidv4(),
-        q: q,
-        options: options,
-        correctIndex: null,
-        word: ''
-      };
+
+      return { id: uuidv4(), q, options, correct: -1, word: '' };
     });
 
-    setParsedCards(newCards);
-    setIsProcessing(false);
+    // Mesma geracao automatica de palavra-chave do importador de PDF — antes o
+    // instrutor tinha que digitar todas as palavras a mao.
+    setParsedCards(assignKeywords(draft).map(c => ({
+      id: c.id, q: c.q, options: c.options, correctIndex: null, word: c.word,
+    })));
   };
 
   const handleUpdateCard = (id, field, value) => {
-    setParsedCards(prev => prev.map(c => c.id === id ? { ...c, [field]: value } : c));
+    const clean = field === 'word' ? sanitizeWord(value).slice(0, MAX_WORD_LEN) : value;
+    setParsedCards(prev => prev.map(c => (c.id === id ? { ...c, [field]: clean } : c)));
   };
 
   const handleRemoveCard = (id) => {
@@ -43,24 +41,30 @@ export default function QuestionTextParser({ onQuestionsParsed }) {
   };
 
   const handleFinalize = () => {
-    // Validar se todos têm correctIndex e word
-    const invalid = parsedCards.find(c => c.correctIndex === null || !c.word.trim() || c.options.length < 2);
-    if (invalid) {
-      alert("Por favor, garanta que todas as perguntas tenham pelo menos 2 alternativas, uma resposta correta selecionada e uma palavra-chave preenchida.");
+    // Aponta QUAL pergunta esta pendente — antes o alerta era generico.
+    const badIdx = parsedCards.findIndex(c => (
+      c.correctIndex === null ||
+      c.options.length < 2 ||
+      sanitizeWord(c.word).length < MIN_WORD_LEN
+    ));
+    if (badIdx !== -1) {
+      dialog.alert(
+        `A pergunta ${badIdx + 1} esta incompleta.\n\n` +
+        `Cada pergunta precisa de pelo menos 2 alternativas, a resposta correta marcada ` +
+        `e uma palavra-chave de ${MIN_WORD_LEN} a ${MAX_WORD_LEN} letras.`
+      );
       return;
     }
-    
-    // Converte para o formato final
-    const finalQuestions = parsedCards.map(c => ({
+
+    onQuestionsParsed(parsedCards.map(c => ({
       id: c.id,
-      q: c.q,
+      q: c.q.trim(),
       options: c.options,
       correct: c.correctIndex,
-      word: c.word.toUpperCase().replace(/\s/g, '')
-    }));
-    
-    onQuestionsParsed(finalQuestions);
+      word: sanitizeWord(c.word),
+    })));
   };
+
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -76,7 +80,7 @@ export default function QuestionTextParser({ onQuestionsParsed }) {
             onChange={e => setRawText(e.target.value)}
             style={{ minHeight: '200px' }}
           />
-          <button className="btn btn-primary" onClick={handleProcessText} disabled={!rawText.trim() || isProcessing}>
+          <button className="btn btn-primary" onClick={handleProcessText} disabled={!rawText.trim()}>
             Processar Texto
           </button>
         </div>
@@ -101,19 +105,23 @@ export default function QuestionTextParser({ onQuestionsParsed }) {
                 >🗑️</button>
 
                 <div className="input-wrap" style={{ marginBottom: '10px', paddingRight: '25px' }}>
-                  <label className="input-label">Pergunta {idx + 1}</label>
-                  <input type="text" value={card.q} onChange={e => handleUpdateCard(card.id, 'q', e.target.value)} />
+                  <label className="input-label" htmlFor={`qtp-q-${card.id}`}>Pergunta {idx + 1}</label>
+                  <input id={`qtp-q-${card.id}`} type="text" value={card.q} onChange={e => handleUpdateCard(card.id, 'q', e.target.value)} />
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '15px' }}>
-                  <label className="input-label">Alternativas (clique na correta)</label>
+                  <span className="input-label">Alternativas (clique na correta)</span>
                   {card.options.map((opt, oIdx) => {
                     const isSelected = card.correctIndex === oIdx;
                     return (
-                      <div 
+                      <button
+                        type="button"
                         key={oIdx}
+                        role="radio"
+                        aria-checked={isSelected}
                         onClick={() => handleUpdateCard(card.id, 'correctIndex', oIdx)}
                         style={{
+                          textAlign: 'left', font: 'inherit',
                           padding: '10px 15px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.9rem',
                           background: isSelected ? 'rgba(57,255,20,0.1)' : 'rgba(255,255,255,0.05)',
                           border: isSelected ? '1px solid var(--t3)' : '1px solid transparent',
@@ -122,14 +130,15 @@ export default function QuestionTextParser({ onQuestionsParsed }) {
                         }}
                       >
                         {opt}
-                      </div>
+                      </button>
                     )
                   })}
                 </div>
 
                 <div className="input-wrap">
-                  <label className="input-label">Palavra Escondida no Grid</label>
+                  <label className="input-label" htmlFor={`qtp-w-${card.id}`}>Palavra Escondida no Grid</label>
                   <input 
+                    id={`qtp-w-${card.id}`}
                     type="text" 
                     placeholder="Ex: BRASILIA" 
                     value={card.word} 

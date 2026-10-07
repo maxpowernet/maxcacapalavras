@@ -2,6 +2,7 @@ import { useGame } from '../../hooks/useGame';
 import BrandLogo from '../../components/BrandLogo';
 import PlayerCard from '../../components/PlayerCard';
 import Scoreboard from '../../components/Scoreboard';
+import ResponderBadge from '../../components/ResponderBadge';
 
 const COLORS = ['var(--t1)', 'var(--t2)', 'var(--t3)', 'var(--t4)'];
 const HEX_COLORS = ['#00F2FF', '#FF007A', '#39FF14', '#FFBD33'];
@@ -57,6 +58,7 @@ export function GameLayout({ children, rightPanel, currentTeamIndex, teams, hide
             </span>
             <h2 style={{ fontSize: '1.6rem', color: '#000' }}>{currentTeam?.name}</h2>
           </div>
+          <ResponderBadge />
           {rightPanel}
         </aside>
       </div>

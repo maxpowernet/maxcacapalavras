@@ -71,17 +71,17 @@ export default function AuthScreen() {
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {!isLogin && (
             <div className="input-wrap animate-fade">
-              <label className="input-label">Nome Completo</label>
-              <input type="text" required value={name} onChange={e => setName(e.target.value)} placeholder="Seu nome..." />
+              <label className="input-label" htmlFor="auth-nome">Nome Completo</label>
+              <input id="auth-nome" type="text" required value={name} onChange={e => setName(e.target.value)} placeholder="Seu nome..." />
             </div>
           )}
           <div className="input-wrap">
-            <label className="input-label">E-mail</label>
-            <input type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="professor@escola.com" />
+            <label className="input-label" htmlFor="auth-email">E-mail</label>
+            <input id="auth-email" type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="professor@escola.com" />
           </div>
           <div className="input-wrap">
-            <label className="input-label">Senha</label>
-            <input type="password" required value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" minLength={6} />
+            <label className="input-label" htmlFor="auth-senha">Senha</label>
+            <input id="auth-senha" type="password" required value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" minLength={6} />
           </div>
 
           {isLogin && (

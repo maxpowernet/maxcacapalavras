@@ -12,6 +12,12 @@ const MODE_NAMES = {
 export default function PrintReport({ record, gameName, className, onClose }) {
   const sortedTeams = record.teams ? [...record.teams].sort((a, b) => b.score - a.score) : [];
 
+  // Só existe quando a turma tinha alunos cadastrados e distribuídos nas
+  // equipes; partidas antigas e turmas sem alunos simplesmente não têm.
+  const sortedStudents = record.perStudent
+    ? [...record.perStudent].sort((a, b) => (b.points - a.points) || (b.correct - a.correct))
+    : [];
+
   const formatTime = (s) => {
     if (!s) return '--';
     return `${Math.floor(s / 60)}m ${s % 60}s`;
@@ -80,6 +86,35 @@ export default function PrintReport({ record, gameName, className, onClose }) {
                 </div>
               ))}
             </div>
+
+            {/* Desempenho individual */}
+            {sortedStudents.length > 0 && (
+              <div style={{ marginBottom: '24px' }}>
+                <h3 style={{ fontSize: '1rem', fontWeight: '700', color: '#333', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                  Desempenho por Aluno
+                </h3>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+                  <thead>
+                    <tr style={{ background: '#f2f2f2' }}>
+                      <th style={{ textAlign: 'left', padding: '8px 10px', borderBottom: '1px solid #ddd' }}>Aluno</th>
+                      <th style={{ textAlign: 'center', padding: '8px 10px', borderBottom: '1px solid #ddd' }}>Acertos</th>
+                      <th style={{ textAlign: 'center', padding: '8px 10px', borderBottom: '1px solid #ddd' }}>Erros</th>
+                      <th style={{ textAlign: 'right', padding: '8px 10px', borderBottom: '1px solid #ddd' }}>Pontos</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sortedStudents.map((s) => (
+                      <tr key={s.studentId}>
+                        <td style={{ padding: '8px 10px', borderBottom: '1px solid #f0f0f0' }}>{s.name}</td>
+                        <td style={{ textAlign: 'center', padding: '8px 10px', borderBottom: '1px solid #f0f0f0' }}>{s.correct}</td>
+                        <td style={{ textAlign: 'center', padding: '8px 10px', borderBottom: '1px solid #f0f0f0' }}>{s.wrong}</td>
+                        <td style={{ textAlign: 'right', padding: '8px 10px', borderBottom: '1px solid #f0f0f0', fontWeight: '700' }}>{s.points}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
 
             <div style={{ textAlign: 'center', fontSize: '0.7rem', color: '#aaa', borderTop: '1px solid #eee', paddingTop: '16px' }}>
               Gerado em {new Date().toLocaleString('pt-BR')} · Max Caça Palavras

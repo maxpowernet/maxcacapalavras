@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useGame } from '../../hooks/useGame';
 import { useAppContext } from '../../context/AppContext';
 import { GameLayout, COLORS, HEX_COLORS } from './GameLayout';
@@ -20,15 +20,24 @@ export default function CorridaScreen() {
   // Bug 6 fix: state reset removed — GameScreen passes key={currentQuestionId}
   // so this component remounts on each new question, resetting local state.
 
+  // Uma resposta por rodada: o clique agenda em +1400ms e o timeout podia
+  // disparar na mesma janela, avancando o turno duas vezes.
+  const answeredRef = useRef(false);
+  const answerTimerRef = useRef(null);
+  useEffect(() => () => clearTimeout(answerTimerRef.current), []);
+
   const handleSelect = (idx) => {
-    if (selectedIdx !== null) return;
+    if (answeredRef.current || selectedIdx !== null) return;
+    answeredRef.current = true;
     setSelectedIdx(idx);
     setTimerActive(false);
     const isCorrect = idx === currentQuestion.correct;
-    setTimeout(() => answerCorrida(isCorrect), 1400);
+    answerTimerRef.current = setTimeout(() => answerCorrida(isCorrect), 1400);
   };
 
   const handleTimeout = () => {
+    if (answeredRef.current) return;
+    answeredRef.current = true;
     setTimerActive(false);
     answerCorrida(false);
   };

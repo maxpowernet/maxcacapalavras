@@ -1,7 +1,15 @@
-import React, { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useGame } from '../../hooks/useGame';
 import { GameLayout } from './GameLayout';
 import { useBetsOdds } from '../../hooks/useBetsOdds';
+
+// Agenda timeouts e cancela os pendentes ao desmontar. Antes, um payout ou
+// liquidacao atrasada podia rodar depois de a tela ja ter saido.
+function useTimeouts() {
+  const ids = useRef([]);
+  useEffect(() => () => { ids.current.forEach(clearTimeout); ids.current = []; }, []);
+  return (fn, ms) => { ids.current.push(setTimeout(fn, ms)); };
+}
 
 // Computa raridades com base no % de vitória configurado
 // rare + legendary somam playerWinPct; proporção 4:1 mantida
@@ -21,6 +29,7 @@ function computeRarities(playerWinPct) {
 
 export default function LootboxScreen() {
   const { gameState, updateTeamScore, addHouseBalance, nextTurn, endBetsSession } = useGame();
+  const later = useTimeouts();
   const { odds } = useBetsOdds();
 
   const [opening, setOpening] = useState(false);
@@ -51,7 +60,7 @@ export default function LootboxScreen() {
       }
     }
 
-    setTimeout(() => {
+    later(() => {
       const prize = boxPrice * selectedRarity.multiplier;
       updateTeamScore(gameState.currentTeamIndex, prize);
       addHouseBalance(-prize);
@@ -91,7 +100,17 @@ export default function LootboxScreen() {
               <p style={{ fontSize: '2.5rem', fontWeight: '900', color: result.color, margin: 0 }}>R$ {result.prize}</p>
             </div>
           ) : (
-            <div style={{ fontSize: '8rem', cursor: 'pointer', transition: 'transform 0.2s' }} onClick={handleOpenBox}>📦</div>
+            <button
+              type="button"
+              aria-label="Abrir o baú"
+              style={{
+                fontSize: '8rem', cursor: 'pointer', transition: 'transform 0.2s',
+                background: 'none', border: 'none', padding: 0, lineHeight: 1,
+              }}
+              onClick={handleOpenBox}
+            >
+              📦
+            </button>
           )}
         </div>
 

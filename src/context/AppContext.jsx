@@ -3,19 +3,22 @@ import { store } from '../utils/storage';
 import { useTheme } from '../hooks/useTheme';
 import { auth, db } from '../firebase';
 import { onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc, setDoc, onSnapshot, collection, query, where } from 'firebase/firestore';
+import { doc, setDoc, onSnapshot, collection, query, where } from 'firebase/firestore';
 
-const AppContext = createContext();
+const AppContext = createContext(null);
 
 export function AppProvider({ children }) {
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
 
   const [classes,   setClasses]   = useState([]);
+  const [questionBanks, setQuestionBanks] = useState([]);
   const [games,     setGames]     = useState([]);
   const [history,   setHistory]   = useState([]);
   const [questions, setQuestions] = useState([]);
-  const [gameState, setGameState] = useState({ status: 'idle' });
+  const [gameState, setGameState] = useState(
+    /** @type {import('../types.js').GameState} */ ({ status: 'idle' })
+  );
 
   const ODDS_DEFAULTS = { cassino: 20, crash: 10, lootbox: 5, roleta: 45, cassino_inst: 20 };
   const [odds, setOddsState] = useState(ODDS_DEFAULTS);
@@ -27,49 +30,6 @@ export function AppProvider({ children }) {
   useEffect(() => {
     gameStateRef.current = gameState;
   }, [gameState]);
-
-  // 1. Listen to Firebase Auth state
-  useEffect(() => {
-    let unsubUserDoc = null;
-
-    const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (unsubUserDoc) {
-        unsubUserDoc();
-        unsubUserDoc = null;
-      }
-
-      if (firebaseUser) {
-        // Escuta o perfil do usuário em tempo real
-        const userDocRef = doc(db, 'users', firebaseUser.uid);
-        unsubUserDoc = onSnapshot(userDocRef, async (docSnap) => {
-          if (docSnap.exists()) {
-            const profile = docSnap.data();
-            setUser(profile);
-            
-            // Tenta migrar os dados locais se houver
-            await checkAndMigrateLocalStorage(profile.userId);
-          } else {
-            // Caso o doc de perfil ainda não exista (durante o registro)
-            setUser({
-              userId: firebaseUser.uid,
-              name: firebaseUser.displayName || firebaseUser.email,
-              email: firebaseUser.email,
-              role: 'instructor'
-            });
-          }
-          setAuthLoading(false);
-        });
-      } else {
-        setUser(null);
-        setAuthLoading(false);
-      }
-    });
-
-    return () => {
-      unsubscribeAuth();
-      if (unsubUserDoc) unsubUserDoc();
-    };
-  }, []);
 
   // Função auxiliar para migrar dados de localStorage para Firestore
   const checkAndMigrateLocalStorage = async (userId) => {
@@ -108,11 +68,19 @@ export function AppProvider({ children }) {
       writesOccurred = true;
     }
 
-    // Migração de perguntas
+    // Migração de perguntas: viram um banco pessoal reutilizável. A coleção
+    // 'questions' antiga não era lida por ninguém.
     if (localQuestions.length > 0) {
-      for (const q of localQuestions) {
-        await setDoc(doc(db, 'questions', q.id), { ...q, createdBy: userId });
-      }
+      const bankId = `migracao-${userId}`;
+      await setDoc(doc(db, 'questionBanks', bankId), {
+        id: bankId,
+        name: 'Perguntas importadas (migração)',
+        questions: localQuestions,
+        isPublic: false,
+        ownerId: userId,
+        ownerName: '',
+        createdAt: Date.now(),
+      });
       writesOccurred = true;
     }
 
@@ -132,17 +100,85 @@ export function AppProvider({ children }) {
     }
   };
 
+  const resetUserData = () => {
+    setClasses([]);
+    setGames([]);
+    setHistory([]);
+    setQuestions([]);
+    setQuestionBanks([]);
+    setGameState({ status: 'idle' });
+    setOddsState({ cassino: 20, crash: 10, lootbox: 5, roleta: 45, cassino_inst: 20 });
+  };
+
+  // Persiste o estado da partida sempre que ele muda. O guarda evita
+  // reescrever exatamente o que acabou de chegar do snapshot do Firestore.
+  const lastPersistedRef = useRef(null);
+  useEffect(() => {
+    if (!user || !gameState) return;
+    const snapshot = JSON.stringify(gameState);
+    if (lastPersistedRef.current === snapshot) return;
+    lastPersistedRef.current = snapshot;
+    setDoc(doc(db, 'users', user.userId, 'state', 'game_state'), gameState)
+      .catch(err => console.error('Erro ao salvar game_state:', err));
+  }, [gameState, user]);
+
+  // 1. Listen to Firebase Auth state
+  useEffect(() => {
+    let unsubUserDoc = null;
+
+    const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (unsubUserDoc) {
+        unsubUserDoc();
+        unsubUserDoc = null;
+      }
+
+      if (firebaseUser) {
+        // Escuta o perfil do usuário em tempo real
+        const userDocRef = doc(db, 'users', firebaseUser.uid);
+        unsubUserDoc = onSnapshot(userDocRef, async (docSnap) => {
+          // try/finally: antes, uma falha na migração (offline, regras do
+          // Firestore, cota) escapava do await e o setAuthLoading(false) do
+          // fim nunca rodava — o app ficava preso em "Carregando..." para
+          // sempre, sem nenhuma mensagem.
+          try {
+            if (docSnap.exists()) {
+              const profile = docSnap.data();
+              setUser(profile);
+
+              // Tenta migrar os dados locais se houver
+              await checkAndMigrateLocalStorage(profile.userId);
+            } else {
+              // Caso o doc de perfil ainda não exista (durante o registro)
+              setUser({
+                userId: firebaseUser.uid,
+                name: firebaseUser.displayName || firebaseUser.email,
+                email: firebaseUser.email,
+                role: 'instructor'
+              });
+            }
+          } catch (err) {
+            console.error('Falha ao carregar/migrar o perfil:', err);
+          } finally {
+            setAuthLoading(false);
+          }
+        });
+      } else {
+        setUser(null);
+        resetUserData();
+        setAuthLoading(false);
+      }
+    });
+
+    return () => {
+      unsubscribeAuth();
+      if (unsubUserDoc) unsubUserDoc();
+    };
+  }, []);
+
+
   // 2. Listen to Firestore collections when user is logged in
   useEffect(() => {
-    if (!user) {
-      setClasses([]);
-      setGames([]);
-      setHistory([]);
-      setQuestions([]);
-      setGameState({ status: 'idle' });
-      setOddsState({ cassino: 20, crash: 10, lootbox: 5, roleta: 45, cassino_inst: 20 });
-      return;
-    }
+    if (!user) return;
 
     const userId = user.userId;
 
@@ -156,10 +192,19 @@ export function AppProvider({ children }) {
 
     // Listen to games
     const qGames = query(collection(db, 'games'), where('createdBy', '==', userId));
+
+    // Recupera as perguntas da partida a partir do documento do jogo.
+    let loadedGames = [];
+    const hydrateQuestions = (state) => {
+      if (!state || state.status !== 'playing' || !state.gameId) return;
+      const game = loadedGames.find((g) => g.id === state.gameId);
+      if (game?.questions?.length) setQuestions(game.questions);
+    };
+
     const unsubscribeGames = onSnapshot(qGames, (snapshot) => {
-      const list = [];
-      snapshot.forEach((doc) => list.push(doc.data()));
-      setGames(list);
+      loadedGames = snapshot.docs.map((d) => d.data());
+      setGames(loadedGames);
+      hydrateQuestions(gameStateRef.current);
     });
 
     // Listen to history
@@ -171,24 +216,33 @@ export function AppProvider({ children }) {
       setHistory(list);
     });
 
-    // Listen to questions
-    const qQuestions = query(collection(db, 'questions'), where('createdBy', '==', userId));
-    const unsubscribeQuestions = onSnapshot(qQuestions, (snapshot) => {
-      if (gameStateRef.current && gameStateRef.current.status === 'playing') {
-        // Ignora atualizações do banco de perguntas durante o jogo ativo
-        // para não sobrescrever as perguntas do jogo atual
-        return;
-      }
-      const list = [];
-      snapshot.forEach((doc) => list.push(doc.data()));
-      setQuestions(list);
+    // Bancos de perguntas: os próprios e os publicados por outros instrutores.
+    const qMyBanks = query(collection(db, 'questionBanks'), where('ownerId', '==', userId));
+    const qPublicBanks = query(collection(db, 'questionBanks'), where('isPublic', '==', true));
+
+    let mine = [];
+    let shared = [];
+    const mergeBanks = () => {
+      const byId = new Map();
+      for (const b of [...mine, ...shared]) byId.set(b.id, b);
+      setQuestionBanks([...byId.values()]);
+    };
+    const unsubscribeMyBanks = onSnapshot(qMyBanks, (snap) => {
+      mine = snap.docs.map((d) => d.data());
+      mergeBanks();
+    });
+    const unsubscribePublicBanks = onSnapshot(qPublicBanks, (snap) => {
+      shared = snap.docs.map((d) => d.data());
+      mergeBanks();
     });
 
     // Listen to gameState
     const gameStateDocRef = doc(db, 'users', userId, 'state', 'game_state');
     const unsubscribeGameState = onSnapshot(gameStateDocRef, (docSnap) => {
       if (docSnap.exists()) {
-        setGameState(docSnap.data());
+        const state = /** @type {import('../types.js').GameState} */ (docSnap.data());
+        setGameState(state);
+        hydrateQuestions(state);
       } else {
         setGameState({ status: 'idle' });
       }
@@ -206,7 +260,8 @@ export function AppProvider({ children }) {
       unsubscribeClasses();
       unsubscribeGames();
       unsubscribeHistory();
-      unsubscribeQuestions();
+      unsubscribeMyBanks();
+      unsubscribePublicBanks();
       unsubscribeGameState();
       unsubscribeOdds();
     };
@@ -224,16 +279,9 @@ export function AppProvider({ children }) {
   };
 
   // Sync gameState back to Firestore when it is mutated locally by useGame.js
-  const setGameStateWithFirebase = async (updater) => {
+  const setGameStateWithFirebase = (updater) => {
     if (!user) return;
-    
-    setGameState(prev => {
-      const nextState = typeof updater === 'function' ? updater(prev) : updater;
-      // Write to Firestore
-      const gameStateDocRef = doc(db, 'users', user.userId, 'state', 'game_state');
-      setDoc(gameStateDocRef, nextState).catch(err => console.error("Erro ao salvar game_state:", err));
-      return nextState;
-    });
+    setGameState(updater);
   };
 
   return (
@@ -241,6 +289,7 @@ export function AppProvider({ children }) {
       user, setUser,
       authLoading,
       classes, setClasses,
+      questionBanks, setQuestionBanks,
       games, setGames,
       history, setHistory,
       questions, setQuestions,
