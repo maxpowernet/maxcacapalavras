@@ -3,6 +3,7 @@ import { useGame } from '../../hooks/useGame';
 import { GameLayout } from './GameLayout';
 import { useBetsOdds } from '../../hooks/useBetsOdds';
 import { institutionalQuestions } from '../../data/institutionalQuestions';
+import bombomImg from '../../assets/bombom.png';
 
 const EMOJIS = ['⛑️', '🔧', '🚛', '🦺'];
 
@@ -21,7 +22,7 @@ export default function CassinoInstitucionalScreen() {
   const [unlocked, setUnlocked] = useState(false);
   const [wrongFeedback, setWrongFeedback] = useState(false);
 
-  // Popup temporário (8s) de bombom ganho/devolvido — o componente remonta a cada
+  // Popup temporário (6s) de bombom ganho/devolvido — o componente remonta a cada
   // troca de turno, então o resultado do giro anterior já está disponível no mount.
   const [candyPopup, setCandyPopup] = useState(() => {
     if (gameState.phase !== 'spin_result' || !gameState.lastSpinResult) return null;
@@ -81,7 +82,7 @@ export default function CassinoInstitucionalScreen() {
 
   useEffect(() => {
     if (!candyPopup) return;
-    const timer = setTimeout(() => setCandyPopup(null), 8000);
+    const timer = setTimeout(() => setCandyPopup(null), 6000);
     return () => clearTimeout(timer);
   }, [candyPopup]);
 
@@ -184,15 +185,27 @@ export default function CassinoInstitucionalScreen() {
       </div>
 
       {candyPopup && (
-        <div className="animate-fade" style={{
-          position: 'fixed', top: '30px', left: '50%', transform: 'translateX(-50%)', zIndex: 999,
-          padding: '18px 32px', borderRadius: '20px', fontSize: '1.3rem', fontWeight: '800', textAlign: 'center',
-          background: candyPopup === 'awarded' ? 'rgba(57,255,20,0.15)' : 'rgba(255,0,122,0.15)',
-          border: `2px solid ${candyPopup === 'awarded' ? 'var(--t3)' : 'var(--t2)'}`,
-          color: candyPopup === 'awarded' ? 'var(--t3)' : 'var(--t2)',
-          boxShadow: `0 0 30px ${candyPopup === 'awarded' ? 'var(--t3)' : 'var(--t2)'}40`,
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 999, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'rgba(0,0,0,0.65)',
         }}>
-          {candyPopup === 'awarded' ? '🍬 Bombom conquistado! Pegue um na cesta!' : '😢 Devolva um bombom para a cesta!'}
+          <div className="glass animate-fade" style={{
+            padding: '36px 48px', borderRadius: '24px', textAlign: 'center',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px',
+            background: candyPopup === 'awarded' ? 'rgba(57,255,20,0.12)' : 'rgba(255,0,122,0.12)',
+            border: `2px solid ${candyPopup === 'awarded' ? 'var(--t3)' : 'var(--t2)'}`,
+            boxShadow: `0 0 50px ${candyPopup === 'awarded' ? 'var(--t3)' : 'var(--t2)'}60`,
+          }}>
+            <div style={{ position: 'relative', width: '160px', height: '160px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <img src={bombomImg} alt="Bombom" style={{ width: '160px', height: '160px', objectFit: 'contain', filter: candyPopup === 'returned' ? 'grayscale(40%)' : 'none' }} />
+              {candyPopup === 'returned' && (
+                <span style={{ position: 'absolute', fontSize: '5rem', color: '#ff1a1a', textShadow: '0 0 12px rgba(0,0,0,0.6)' }}>❌</span>
+              )}
+            </div>
+            <p style={{ margin: 0, fontSize: '1.4rem', fontWeight: '800', color: candyPopup === 'awarded' ? 'var(--t3)' : 'var(--t2)' }}>
+              {candyPopup === 'awarded' ? '🍬 Bombom conquistado! Pegue um na cesta!' : '😢 Devolva um bombom para a cesta!'}
+            </p>
+          </div>
         </div>
       )}
     </GameLayout>
